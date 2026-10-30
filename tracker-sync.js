@@ -4,7 +4,7 @@
  */
 
 // Replace with your Web App deployment URL
-const GOOGLE_SCRIPT_API_URL = "https://script.google.com/macros/s/AKfycbz_REPLACE_WITH_YOUR_DEPLOYMENT_ID/exec";
+const GOOGLE_SCRIPT_API_URL = "https://script.google.com/macros/s/AKfycbyt9Ai5-FBS23G1_OSbg30a2sCyXjuY9dWuPfqo2YHR2Umbunn2uIXnlozAEGOpigkquA/exec";
 
 // Default fallback data for immediate load / offline use
 const FALLBACK_DATA = {

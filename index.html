@@ -909,23 +909,72 @@
 
     </main>
 
-    <!-- ==================== TAB 3: ROSTER LOG ==================== -->
+    <!-- ==================== TAB 3: ROSTER CALENDAR ==================== -->
     <main id="tab-roster" class="tab-page">
-      
-      <div class="stat-card">
-        <div style="display:flex; justify-content:space-between; align-items:center;">
-          <div>
-            <span class="stat-label">Duty Terminal Shifts</span>
-            <div style="font-size:15px; font-weight:700; color:var(--text-primary); margin-top:2px;">Chronological Shift Log</div>
-          </div>
-          <span class="kwml-badge">Live Roster</span>
-        </div>
-      </div>
 
-      <section>
-        <div class="section-title">Shift History & Upcoming</div>
-        <div class="coff-container" id="roster-items-container">
-          <!-- Populated dynamically by tracker-sync.js -->
+      <!-- Interactive iOS Calendar Component -->
+      <section class="calendar-container">
+        
+        <!-- Month Title & Navigation Header -->
+        <div class="cal-header-bar">
+          <div class="cal-month-title" id="cal-current-month-year">October 2026</div>
+          <div class="cal-nav-buttons">
+            <button class="cal-btn" id="cal-prev-btn" title="Previous Month">‹</button>
+            <button class="cal-btn cal-btn-today" id="cal-today-btn">Today</button>
+            <button class="cal-btn" id="cal-next-btn" title="Next Month">›</button>
+          </div>
+        </div>
+
+        <!-- Weekdays Header (Sun - Sat) -->
+        <div class="cal-weekdays-grid">
+          <div class="cal-weekday-label weekend">Sun</div>
+          <div class="cal-weekday-label">Mon</div>
+          <div class="cal-weekday-label">Tue</div>
+          <div class="cal-weekday-label">Wed</div>
+          <div class="cal-weekday-label">Thu</div>
+          <div class="cal-weekday-label">Fri</div>
+          <div class="cal-weekday-label weekend">Sat</div>
+        </div>
+
+        <!-- Days Grid (Rendered dynamically) -->
+        <div class="cal-days-grid" id="cal-days-grid"></div>
+
+      </section>
+
+      <!-- Shift Color Legend -->
+      <section class="cal-legend-bar">
+        <div class="legend-item">
+          <span class="legend-dot" style="background:var(--ios-blue);"></span>
+          <span>Shift A (07-15)</span>
+        </div>
+        <div class="legend-item">
+          <span class="legend-dot" style="background:var(--ios-orange);"></span>
+          <span>Shift B (13-21)</span>
+        </div>
+        <div class="legend-item">
+          <span class="legend-dot" style="background:var(--ios-green);"></span>
+          <span>Shift G (09-17)</span>
+        </div>
+        <div class="legend-item">
+          <span class="legend-dot" style="background:var(--ios-purple);"></span>
+          <span>Holiday + C-Off</span>
+        </div>
+      </section>
+
+      <!-- Selected Day Details Card -->
+      <section class="day-detail-card" id="cal-selected-day-details">
+        <div class="day-detail-header">
+          <div>
+            <div class="day-detail-date" id="sel-day-date">Select a Date</div>
+            <div class="day-detail-dayname" id="sel-day-dayname">Tap any day on the calendar above</div>
+          </div>
+          <span id="sel-day-badge" class="kwml-badge">Roster</span>
+        </div>
+
+        <div id="sel-day-body">
+          <div style="font-size:13px; color:var(--text-muted); padding: 8px 0;">
+            Tap any date above to view terminal, timing, and duty notes.
+          </div>
         </div>
       </section>
 

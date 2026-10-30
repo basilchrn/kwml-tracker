@@ -1,12 +1,12 @@
 /**
  * tracker-sync.js
- * Synchronizes the KWML iOS Dashboard dynamically with the Google Sheet.
+ * Synchronizes the KWML iOS 4-Tab Dashboard dynamically with the Google Sheet.
  */
 
-// Replace with your Web App deployment URL
+// Replace with your Web App deployment URL from Google Apps Script
 const GOOGLE_SCRIPT_API_URL = "https://script.google.com/macros/s/AKfycbyt9Ai5-FBS23G1_OSbg30a2sCyXjuY9dWuPfqo2YHR2Umbunn2uIXnlozAEGOpigkquA/exec";
 
-// Default fallback data for immediate load / offline use
+// Fallback data for immediate load / offline iOS experience
 const FALLBACK_DATA = {
   employee: {
     name: "Basil Cherian",
@@ -58,6 +58,36 @@ document.addEventListener("DOMContentLoaded", () => {
   // Fetch live update if URL configured
   fetchLiveSheetData();
 });
+
+/**
+ * 4-Tab Navigation Switcher
+ */
+function switchTab(tabKey) {
+  const tabs = ["summary", "coff", "roster", "profile"];
+  const titles = {
+    summary: "Shift & Leave Tracker",
+    coff: "C-Off Expiry Hub",
+    roster: "Duty Roster Log",
+    profile: "Employee Profile"
+  };
+
+  tabs.forEach(t => {
+    const pageEl = document.getElementById(`tab-${t}`);
+    const navEl = document.getElementById(`tab-nav-${t}`);
+    if (pageEl) pageEl.classList.remove("active-page");
+    if (navEl) navEl.classList.remove("active");
+  });
+
+  const activePage = document.getElementById(`tab-${tabKey}`);
+  const activeNav = document.getElementById(`tab-nav-${tabKey}`);
+  const headerTitle = document.getElementById("page-header-title");
+
+  if (activePage) activePage.classList.add("active-page");
+  if (activeNav) activeNav.classList.add("active");
+  if (headerTitle && titles[tabKey]) headerTitle.textContent = titles[tabKey];
+
+  window.scrollTo({ top: 0, behavior: "smooth" });
+}
 
 async function fetchLiveSheetData(isManual = false) {
   const statusText = document.getElementById("sync-status-text");
@@ -118,7 +148,7 @@ function updateDashboardUI(data) {
         safeSetText("#balance-pl-accrued", `Accrued: ${item.accrued} (1 PL / 20 days)`);
       } else if (typeLower.includes("casual leave") || typeLower.includes("(cl)")) {
         safeSetText("#balance-cl-net", item.net);
-        safeSetText("#balance-cl-accrued", `Accrued: ${item.accrued} (1.0 / month)`);
+        safeSetText("#balance-cl-accrued", `Accrued: ${item.accrued} (1 Work-Year)`);
       } else if (typeLower.includes("compensatory off") || typeLower.includes("(c-off)")) {
         safeSetText("#balance-coff-net", item.net);
       } else if (typeLower.includes("restricted holiday") || typeLower.includes("(rh)")) {

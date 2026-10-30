@@ -48,23 +48,23 @@
       <section class="wallet-card">
         <div class="wallet-header">
           <div class="emp-brand" style="font-size:11px; font-weight:700; color:var(--text-muted); letter-spacing:0.5px;">KWML EMPLOYEE ID</div>
-          <div class="emp-id-badge" id="emp-id" style="background:rgba(255,255,255,0.1); padding:4px 8px; border-radius:8px; font-size:11px; font-weight:600;">WM-10246</div>
+          <div class="emp-id-badge" id="emp-id" style="background:rgba(255,255,255,0.1); padding:4px 8px; border-radius:8px; font-size:11px; font-weight:600;">--</div>
         </div>
         <div class="emp-profile-row">
-          <img src="user.jpg" alt="Basil Cherian" class="emp-photo" onerror="this.src='https://ui-avatars.com/api/?name=Basil+Cherian&background=0A84FF&color=fff'">
+          <img src="user.jpg" alt="Profile" class="emp-photo" onerror="this.src='https://ui-avatars.com/api/?name=KWML+User&background=0A84FF&color=fff'">
           <div class="emp-main">
-            <h2 class="emp-name" id="emp-name">Basil Cherian</h2>
-            <div class="emp-role" id="emp-designation">Terminal Controller (Operations)</div>
+            <h2 class="emp-name" id="emp-name">Loading...</h2>
+            <div class="emp-role" id="emp-designation">--</div>
           </div>
         </div>
         <div class="wallet-meta">
           <div class="meta-item">
             <span>DATE OF JOINING</span>
-            <strong id="emp-doj">15-07-2026</strong>
+            <strong id="emp-doj">--</strong>
           </div>
           <div class="meta-item" style="text-align: right;">
             <span>ACTIVE LEAVE POOL</span>
-            <strong>14.0 Days Active</strong>
+            <strong id="emp-pool">--</strong>
           </div>
         </div>
       </section>
@@ -75,22 +75,22 @@
         <div class="stats-grid">
           <div class="stat-card">
             <span class="stat-label">Days Worked</span>
-            <div class="stat-value" id="stat-days-worked">93</div>
+            <div class="stat-value" id="stat-days-worked">--</div>
             <span class="stat-sub">Rostered Shifts</span>
           </div>
           <div class="stat-card">
             <span class="stat-label">Offs Availed</span>
-            <div class="stat-value" id="stat-offs-availed">15</div>
+            <div class="stat-value" id="stat-offs-availed">--</div>
             <span class="stat-sub">Weekly & Holidays</span>
           </div>
           <div class="stat-card">
             <span class="stat-label">C-Offs Availed</span>
-            <div class="stat-value" id="stat-coffs-availed">0</div>
-            <span class="stat-sub">4 Earned & Ready</span>
+            <div class="stat-value" id="stat-coffs-availed">--</div>
+            <span class="stat-sub" id="stat-coffs-sub">From Holidays</span>
           </div>
           <div class="stat-card">
             <span class="stat-label">Emergency Leaves</span>
-            <div class="stat-value" id="stat-el-availed">0</div>
+            <div class="stat-value" id="stat-el-availed">--</div>
             <span class="stat-sub">Max 15/Yr (LOP)</span>
           </div>
         </div>
@@ -104,10 +104,10 @@
           <div class="leave-card">
             <div class="leave-info">
               <h3>Paid Leave (PL)</h3>
-              <p id="balance-pl-accrued">1 PL / 20 days (Excl. EL)</p>
+              <p id="balance-pl-accrued">Loading policy from sheet...</p>
             </div>
             <div class="leave-count">
-              <div class="count-num" id="balance-pl-net" style="color: var(--ios-blue);">5.5</div>
+              <div class="count-num" id="balance-pl-net" style="color: var(--ios-blue);">--</div>
               <div class="count-label">DAYS NET</div>
             </div>
           </div>
@@ -115,10 +115,10 @@
           <div class="leave-card">
             <div class="leave-info">
               <h3>Casual Leave (CL)</h3>
-              <p id="balance-cl-accrued">1/mo • Valid: 1 Work-Year</p>
+              <p id="balance-cl-accrued">Loading policy from sheet...</p>
             </div>
             <div class="leave-count">
-              <div class="count-num" id="balance-cl-net" style="color: var(--ios-green);">4.0</div>
+              <div class="count-num" id="balance-cl-net" style="color: var(--ios-green);">--</div>
               <div class="count-label">DAYS NET</div>
             </div>
           </div>
@@ -126,10 +126,10 @@
           <div class="leave-card">
             <div class="leave-info">
               <h3>Compensatory Off (C-Off)</h3>
-              <p>90-Day validity from duty date</p>
+              <p id="balance-coff-accrued">90-Day validity from duty date</p>
             </div>
             <div class="leave-count">
-              <div class="count-num" id="balance-coff-net" style="color: var(--ios-orange);">4.0</div>
+              <div class="count-num" id="balance-coff-net" style="color: var(--ios-orange);">--</div>
               <div class="count-label">DAYS NET</div>
             </div>
           </div>
@@ -137,10 +137,10 @@
           <div class="leave-card">
             <div class="leave-info">
               <h3>Restricted Holiday (RH)</h3>
-              <p>Expires 31-Dec • Resets Jan 1</p>
+              <p id="balance-rh-accrued">Expires 31-Dec • Resets Jan 1</p>
             </div>
             <div class="leave-count">
-              <div class="count-num" id="balance-rh-net" style="color: var(--ios-purple);">1.0</div>
+              <div class="count-num" id="balance-rh-net" style="color: var(--ios-purple);">--</div>
               <div class="count-label">DAYS NET</div>
             </div>
           </div>
@@ -148,11 +148,11 @@
         </div>
       </section>
 
-      <!-- Quick Action Alert -->
-      <section class="ios-list-cell" style="border-left: 3px solid var(--ios-orange);">
+      <!-- Quick Action Alert (Dynamic from C-Off Sheet) -->
+      <section class="ios-list-cell" id="quick-alert-card" style="border-left: 3px solid var(--ios-orange);">
         <div>
-          <div style="font-weight:600; font-size:13px; color:var(--ios-orange);">⏳ Nearest C-Off Expiry</div>
-          <div style="font-size:11px; color:var(--text-secondary); margin-top:2px;">Thiruvonam C-Off expires 24-Nov-2026 (25d left)</div>
+          <div style="font-weight:600; font-size:13px; color:var(--ios-orange);" id="quick-alert-title">⏳ C-Off Expiry Status</div>
+          <div style="font-size:11px; color:var(--text-secondary); margin-top:2px;" id="quick-alert-text">Checking validity dates...</div>
         </div>
         <button onclick="switchTab('coff')" style="background:rgba(255,159,10,0.15); border:1px solid rgba(255,159,10,0.3); color:var(--ios-orange); padding:5px 10px; border-radius:10px; font-size:11px; font-weight:600; cursor:pointer;">View Hub</button>
       </section>
@@ -173,13 +173,13 @@
       <div class="stats-grid">
         <div class="stat-card">
           <span class="stat-label">Total Earned</span>
-          <div class="stat-value" style="color:var(--ios-orange);">4</div>
+          <div class="stat-value" id="coff-stat-earned" style="color:var(--ios-orange);">--</div>
           <span class="stat-sub">Official Holidays</span>
         </div>
         <div class="stat-card">
           <span class="stat-label">Active / Ready</span>
-          <div class="stat-value" style="color:var(--ios-green);">4</div>
-          <span class="stat-sub">0 Availed to Date</span>
+          <div class="stat-value" id="coff-stat-active" style="color:var(--ios-green);">--</div>
+          <span class="stat-sub" id="coff-stat-sub">0 Availed</span>
         </div>
       </div>
 
@@ -190,7 +190,9 @@
           <span style="font-size: 11px; color: var(--ios-orange);">Active Validity</span>
         </div>
         <div class="coff-container" id="coff-items-container">
-          <!-- Populated dynamically by tracker-sync.js -->
+          <div style="text-align:center; padding:30px 10px; color:var(--text-muted); font-size:13px;">
+            Loading C-Off records from Google Sheet...
+          </div>
         </div>
       </section>
 
@@ -204,7 +206,7 @@
         
         <!-- Month Title & Navigation Header -->
         <div class="cal-header-bar">
-          <div class="cal-month-title" id="cal-current-month-year">October 2026</div>
+          <div class="cal-month-title" id="cal-current-month-year">Roster Calendar</div>
           <div class="cal-nav-buttons">
             <button class="cal-btn" id="cal-prev-btn" title="Previous Month">‹</button>
             <button class="cal-btn cal-btn-today" id="cal-today-btn">Today</button>
@@ -225,7 +227,9 @@
 
         <!-- Days Grid (Rendered dynamically) -->
         <div class="cal-days-grid" id="cal-days-grid">
-          <!-- Filled by tracker-sync.js -->
+          <div style="grid-column: span 7; text-align:center; padding:30px 10px; color:var(--text-muted); font-size:13px;">
+            Loading shift schedule from Google Sheet...
+          </div>
         </div>
 
       </section>
@@ -262,7 +266,7 @@
 
         <div id="sel-day-body">
           <div style="font-size:13px; color:var(--text-muted); padding: 8px 0;">
-            No shift selected. Tap any date above to view terminal, timing, and duty notes.
+            Tap any date above to view terminal, timing, and duty notes.
           </div>
         </div>
       </section>
@@ -274,9 +278,9 @@
       
       <!-- Employee Profile Header Card -->
       <section class="wallet-card" style="text-align: center; display: flex; flex-direction: column; align-items: center;">
-        <img src="user.jpg" alt="Basil Cherian" class="emp-photo" style="width: 84px; height: 84px; border-radius: 24px; border: 3px solid var(--ios-blue); margin-bottom: 12px;" onerror="this.src='https://ui-avatars.com/api/?name=Basil+Cherian&background=0A84FF&color=fff&size=128'">
-        <h2 style="font-size: 21px; font-weight: 700; color: var(--text-primary);">Basil Cherian</h2>
-        <div style="font-size: 13px; color: var(--ios-blue); font-weight: 500; margin-top: 2px;">Terminal Controller (Operations)</div>
+        <img src="user.jpg" alt="Profile" class="emp-photo" style="width: 84px; height: 84px; border-radius: 24px; border: 3px solid var(--ios-blue); margin-bottom: 12px;" onerror="this.src='https://ui-avatars.com/api/?name=KWML+User&background=0A84FF&color=fff&size=128'">
+        <h2 style="font-size: 21px; font-weight: 700; color: var(--text-primary);" id="profile-name">Loading...</h2>
+        <div style="font-size: 13px; color: var(--ios-blue); font-weight: 500; margin-top: 2px;" id="profile-designation">--</div>
         <div style="font-size: 11px; color: var(--text-muted); margin-top: 4px;">Kochi Water Metro Limited (KWML)</div>
       </section>
 
@@ -286,11 +290,11 @@
         <div class="detail-group">
           <div class="detail-row">
             <span class="detail-label">Employee ID</span>
-            <span class="detail-value">WM-10246</span>
+            <span class="detail-value" id="profile-empid">--</span>
           </div>
           <div class="detail-row">
             <span class="detail-label">Designation</span>
-            <span class="detail-value">Terminal Controller</span>
+            <span class="detail-value" id="profile-desig-row">--</span>
           </div>
           <div class="detail-row">
             <span class="detail-label">Department</span>
@@ -298,11 +302,11 @@
           </div>
           <div class="detail-row">
             <span class="detail-label">Date of Joining</span>
-            <span class="detail-value">15-07-2026</span>
+            <span class="detail-value" id="profile-doj">--</span>
           </div>
           <div class="detail-row">
             <span class="detail-label">Work-Year Cycle</span>
-            <span class="detail-value">15 July – 14 July</span>
+            <span class="detail-value" id="profile-workyear">--</span>
           </div>
           <div class="detail-row">
             <span class="detail-label">Shift System</span>
@@ -317,23 +321,23 @@
         <div class="detail-group">
           <div class="detail-row">
             <span class="detail-label">Paid Leave (PL)</span>
-            <span class="detail-value">1 PL / 20 Qualifying Days</span>
+            <span class="detail-value" id="profile-rule-pl">1 PL / 20 Qualifying Days</span>
           </div>
           <div class="detail-row">
             <span class="detail-label">Casual Leave (CL)</span>
-            <span class="detail-value">1 Day / Month (1 Work-Yr Validity)</span>
+            <span class="detail-value" id="profile-rule-cl">1 Day / Month (1 Work-Yr Validity)</span>
           </div>
           <div class="detail-row">
             <span class="detail-label">Restricted Holiday (RH)</span>
-            <span class="detail-value">2 Days / Calendar Year</span>
+            <span class="detail-value" id="profile-rule-rh">2 Days / Calendar Year</span>
           </div>
           <div class="detail-row">
             <span class="detail-label">Compensatory Off (C-Off)</span>
-            <span class="detail-value">1:1 on Holiday Duty (90-Day Validity)</span>
+            <span class="detail-value" id="profile-rule-coff">1:1 on Holiday Duty (90-Day Validity)</span>
           </div>
           <div class="detail-row">
             <span class="detail-label">Emergency Leave (EL)</span>
-            <span class="detail-value">Max 15 Days / Year (Unpaid / LOP)</span>
+            <span class="detail-value" id="profile-rule-el">Max 15 Days / Year (Unpaid / LOP)</span>
           </div>
         </div>
       </section>

@@ -237,6 +237,11 @@ function updateDashboardUI(data) {
     renderCOffList(data.coffs);
   }
 
+  // 4b. Annual Holidays List (Calendar year)
+  if (data.holidays && Array.isArray(data.holidays)) {
+    renderAnnualHolidays(data.holidays);
+  }
+  
   // 5. Shift Roster Calendar Indexing
   const shiftsToLoad = data.shifts || data.recentShifts || [];
   buildShiftIndex(shiftsToLoad);

@@ -19,7 +19,7 @@
  */
 
 // REPLACE with your deployed Google Apps Script Web App URL (Exec endpoint)
-const GOOGLE_SCRIPT_API_URL = "https://script.google.com/macros/s/AKfycbyt9Ai5-FBS23G1_OSbg30a2sCyXjuY9dWuPfqo2YHR2Umbunn2uIXnlozAEGOpigkquA/exec";
+const GOOGLE_SCRIPT_API_URL = "https://script.google.com/macros/s/AKfycbz_REPLACE_WITH_YOUR_DEPLOYMENT_ID/exec";
 
 // Standard Terminal Name to Abbreviation Converter
 function getTerminalAbbr(name) {

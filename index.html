@@ -183,7 +183,7 @@
         </div>
       </div>
 
-      <!-- Earned C-Offs Register -->
+      <!-- Main Register List -->
       <section>
         <div class="section-title">
           <span>Earned C-Offs Register</span>
@@ -196,14 +196,14 @@
         </div>
       </section>
 
-      <!-- NEW SECTION: Annual Calendar Holidays (Pulled directly from Google Sheet) -->
-      <section style="margin-top: 14px;">
+      <!-- New Section: Official Holidays in Working/Calendar Year (Pulled dynamically from Sheet) -->
+      <section>
         <div class="section-title">
-          <span id="holiday-year-title">Annual Holidays</span>
-          <span style="font-size: 11px; color: var(--ios-blue);">Official KWML Calendar</span>
+          <span>Official Holidays (<span id="holidays-year-label">2026</span>)</span>
+          <span id="holidays-count-badge" style="font-size: 11px; color: var(--ios-blue);">Loading...</span>
         </div>
-        <div class="coff-container" id="holidays-items-container">
-          <div style="text-align:center; padding:20px 10px; color:var(--text-muted); font-size:13px;">
+        <div class="coff-container" id="holiday-items-container">
+          <div style="text-align:center; padding:25px 10px; color:var(--text-muted); font-size:13px;">
             Loading annual holidays from Google Sheet...
           </div>
         </div>
@@ -247,7 +247,7 @@
 
       </section>
 
-<!-- Shift & Leave Color Legend -->
+      <!-- Shift Color Legend -->
       <section class="cal-legend-bar">
         <div class="legend-item">
           <span class="legend-dot" style="background:var(--ios-blue);"></span>
@@ -262,12 +262,8 @@
           <span>Shift G (09-17)</span>
         </div>
         <div class="legend-item">
-          <span class="legend-dot" style="background:#FF453A;"></span>
-          <span>LOP / EL (Red)</span>
-        </div>
-        <div class="legend-item">
-          <span class="legend-dot" style="background:#C0394B;"></span>
-          <span>Leaves & C-Off (Maroon)</span>
+          <span class="legend-dot" style="background:var(--ios-purple);"></span>
+          <span>Holiday + C-Off</span>
         </div>
       </section>
 

@@ -389,7 +389,7 @@ function renderCalendarMonth() {
   const daysInMonth = new Date(year, month + 1, 0).getDate();
   const prevMonthLastDate = new Date(year, month, 0).getDate();
 
-  // 1. Previous month trailing days (padding)
+  // 1. Previous month trailing days
   for (let i = firstDayIndex - 1; i >= 0; i--) {
     const prevDateNum = prevMonthLastDate - i;
     const cell = document.createElement("div");
@@ -417,16 +417,22 @@ function renderCalendarMonth() {
     if (isoDate === todayIso) {
       cell.classList.add("is-today");
     }
-    if (isoDate === gSelectedDateStr) {
-      cell.classList.add("is-selected");
-    }
 
     const shift = gShiftMap.get(isoDate);
+    
+    // Check if real shift or leave data exists in Google Sheet
+    const hasData = Boolean(
+      shift && 
+      shift.code && 
+      shift.code !== "-" && 
+      shift.code !== "WO"
+    );
+
     let badgeHtml = "";
 
     if (shift) {
-      const code = (shift.code || "").toUpperCase();
-      const status = shift.status || "";
+      const code = String(shift.code || "").toUpperCase();
+      const status = String(shift.status || "");
       const abbr = getTerminalAbbr(shift.terminal);
 
       if (status.includes("Holiday Worked")) {
@@ -437,7 +443,25 @@ function renderCalendarMonth() {
         badgeHtml = `<span class="cal-badge badge-shift-b">B • ${abbr}</span>`;
       } else if (code === "G") {
         badgeHtml = `<span class="cal-badge badge-shift-g">G • ${abbr}</span>`;
-      } else if (code === "-" || status.includes("Leave") || status.includes("Off")) {
+      } else if (code === "EL" || status.includes("LOP") || status.includes("Emergency")) {
+        // Red color for LOP / EL
+        badgeHtml = `<span class="cal-badge badge-leave-el">EL (LOP)</span>`;
+      } else if (code === "C-OFF" || status.includes("C-Off")) {
+        // Maroon color for C-Off
+        badgeHtml = `<span class="cal-badge badge-leave-maroon">C-Off</span>`;
+      } else if (code === "CL") {
+        // Maroon color for Casual Leave
+        badgeHtml = `<span class="cal-badge badge-leave-maroon">CL</span>`;
+      } else if (code === "PL") {
+        // Maroon color for Paid Leave
+        badgeHtml = `<span class="cal-badge badge-leave-maroon">PL</span>`;
+      } else if (code === "RH") {
+        // Maroon color for Restricted Holiday
+        badgeHtml = `<span class="cal-badge badge-leave-maroon">RH</span>`;
+      } else if (code === "HOLIDAY" || status.includes("Official Holiday")) {
+        // Maroon color for Official Holiday Off
+        badgeHtml = `<span class="cal-badge badge-leave-maroon">Holiday</span>`;
+      } else if (code === "WO" || status.includes("Off")) {
         badgeHtml = `<span class="cal-badge badge-off-day">Off</span>`;
       } else {
         badgeHtml = `<span class="cal-badge badge-shift-a">${code} • ${abbr}</span>`;
@@ -446,17 +470,26 @@ function renderCalendarMonth() {
 
     cell.innerHTML = `<span class="cal-day-number">${day}</span>${badgeHtml}`;
 
-    cell.addEventListener("click", () => {
-      document.querySelectorAll(".cal-day-cell").forEach(c => c.classList.remove("is-selected"));
-      cell.classList.add("is-selected");
-      gSelectedDateStr = isoDate;
-      inspectDate(isoDate);
-    });
+    // 1) DATES WITH NO DATA: No click listener, no active animation, no selection
+    if (hasData) {
+      cell.classList.add("has-data");
+      if (isoDate === gSelectedDateStr) {
+        cell.classList.add("is-selected");
+      }
+      cell.addEventListener("click", () => {
+        document.querySelectorAll(".cal-day-cell").forEach(c => c.classList.remove("is-selected"));
+        cell.classList.add("is-selected");
+        gSelectedDateStr = isoDate;
+        inspectDate(isoDate);
+      });
+    } else {
+      cell.classList.add("no-data");
+    }
 
     grid.appendChild(cell);
   }
 
-  // 3. Next month leading days (uniform 7-column grid)
+  // 3. Next month leading days
   const totalRendered = firstDayIndex + daysInMonth;
   const trailingCount = (7 - (totalRendered % 7)) % 7;
   for (let nextDay = 1; nextDay <= trailingCount; nextDay++) {
@@ -466,13 +499,13 @@ function renderCalendarMonth() {
     grid.appendChild(cell);
   }
 
-  if (gSelectedDateStr) {
+  if (gSelectedDateStr && gShiftMap.has(gSelectedDateStr)) {
     inspectDate(gSelectedDateStr);
   }
 }
 
 /**
- * Shows details for the tapped date
+ * Shows duty details for the tapped date
  */
 function inspectDate(isoDate) {
   const dateEl = document.getElementById("sel-day-date");
@@ -491,30 +524,78 @@ function inspectDate(isoDate) {
   dayNameEl.textContent = daysOfWeek[dObj.getDay()];
 
   const shift = gShiftMap.get(isoDate);
+  if (!shift) return;
 
-  if (!shift) {
-    badgeEl.textContent = "Off / Rest";
-    badgeEl.style.background = "rgba(148, 163, 184, 0.15)";
-    badgeEl.style.color = "var(--text-muted)";
-    badgeEl.style.borderColor = "rgba(148, 163, 184, 0.3)";
+  const code = (shift.code || "").toUpperCase();
+  const status = shift.status || "Completed";
+  const isCompleted = status.includes("Completed");
+  const isHolidayWorked = status.includes("Holiday Worked");
+  const isLOP = code === "EL" || status.includes("LOP") || status.includes("Emergency");
+  const isOtherLeave = ["CL", "PL", "RH", "C-OFF", "HOLIDAY"].includes(code) || status.includes("Leave") || status.includes("Holiday");
+  const abbr = getTerminalAbbr(shift.terminal);
+
+  // 2) Detail Card Badging & Styling:
+  if (isLOP) {
+    // RED for Emergency Leave / Loss of Pay
+    badgeEl.textContent = "EL (Loss of Pay)";
+    badgeEl.style.color = "#FF453A";
+    badgeEl.style.background = "rgba(255, 69, 58, 0.2)";
+    badgeEl.style.borderColor = "rgba(255, 69, 58, 0.5)";
 
     bodyEl.innerHTML = `
-      <div style="padding: 8px 0;">
-        <div style="font-size: 14px; font-weight: 600; color: var(--text-primary);">Rostered Weekly Off / Rest Day</div>
-        <div style="font-size: 12px; color: var(--text-muted); margin-top: 3px;">
-          No rostered terminal duty scheduled for this date in Google Sheet.
+      <div style="display:flex; flex-direction:column; gap:12px; margin-top:4px;">
+        <div class="detail-metric-row">
+          <span style="font-size:12px; color:var(--text-muted); font-weight:500;">Leave Type</span>
+          <strong style="font-size:14px; color:#FF453A;">Emergency Leave (EL / LOP)</strong>
+        </div>
+        <div class="detail-metric-row">
+          <span style="font-size:12px; color:var(--text-muted); font-weight:500;">Deduction Rule</span>
+          <span style="font-size:13px; color:var(--text-secondary);">Unpaid / Loss of Pay (Non-qualifying for PL)</span>
+        </div>
+        <div class="detail-metric-row">
+          <span style="font-size:12px; color:var(--text-muted); font-weight:500;">Duty Summary</span>
+          <span style="font-size:13px; color:var(--text-primary);">${shift.summary || "Emergency Leave"}</span>
+        </div>
+        <div class="detail-metric-row">
+          <span style="font-size:12px; color:var(--text-muted); font-weight:500;">Approval Status</span>
+          <span class="status-pill badge-leave-el">Leave Availed (LOP)</span>
         </div>
       </div>
     `;
     return;
   }
 
-  const code = (shift.code || "").toUpperCase();
-  const status = shift.status || "Completed";
-  const isCompleted = status.includes("Completed");
-  const isHolidayWorked = status.includes("Holiday Worked");
-  const abbr = getTerminalAbbr(shift.terminal);
+  if (isOtherLeave) {
+    // MAROON for Other Leaves & C-Offs
+    badgeEl.textContent = code === "C-OFF" ? "C-Off Availed" : (code === "HOLIDAY" ? "Holiday Off" : `Leave (${code})`);
+    badgeEl.style.color = "#F07187";
+    badgeEl.style.background = "rgba(144, 28, 54, 0.32)";
+    badgeEl.style.borderColor = "rgba(216, 74, 101, 0.5)";
 
+    bodyEl.innerHTML = `
+      <div style="display:flex; flex-direction:column; gap:12px; margin-top:4px;">
+        <div class="detail-metric-row">
+          <span style="font-size:12px; color:var(--text-muted); font-weight:500;">Leave Classification</span>
+          <strong style="font-size:14px; color:#F07187;">${code === 'C-OFF' ? 'Compensatory Off' : (code === 'HOLIDAY' ? 'Official Holiday Off' : shift.summary)}</strong>
+        </div>
+        <div class="detail-metric-row">
+          <span style="font-size:12px; color:var(--text-muted); font-weight:500;">Duty Hours</span>
+          <span style="font-size:13px; color:var(--text-secondary);">Off Duty (Leave Consumed)</span>
+        </div>
+        <div class="detail-metric-row">
+          <span style="font-size:12px; color:var(--text-muted); font-weight:500;">Roster Record</span>
+          <span style="font-size:13px; color:var(--text-primary);">${shift.summary || code}</span>
+        </div>
+        <div class="detail-metric-row">
+          <span style="font-size:12px; color:var(--text-muted); font-weight:500;">Status</span>
+          <span class="status-pill badge-leave-maroon">${status}</span>
+        </div>
+      </div>
+    `;
+    return;
+  }
+
+  // Work Shifts (A, B, G)
   let badgeColor = "var(--ios-blue)";
   let badgeBg = "rgba(10, 132, 255, 0.15)";
 
@@ -529,7 +610,7 @@ function inspectDate(isoDate) {
     badgeBg = "rgba(48, 209, 88, 0.2)";
   }
 
-  badgeEl.textContent = isHolidayWorked ? "Holiday Worked" : `Shift ${code}`;
+  badgeEl.textContent = isHolidayWorked ? "Holiday Worked (+1 C-Off)" : `Shift ${code}`;
   badgeEl.style.color = badgeColor;
   badgeEl.style.background = badgeBg;
   badgeEl.style.borderColor = badgeColor;

@@ -2,19 +2,20 @@
  * tracker-sync.js
  * Synchronizes the KWML iOS 4-Tab Dashboard dynamically with the Google Sheet.
  * 
- * STRICT DATA INTEGRITY:
- * - NO hardcoded offline employee or shift datasets.
- * - All employee details, attendance statistics, leave balances, C-Off validity,
- *   and shift calendar schedules are loaded directly from the Google Sheet API.
+ * STRICT REAL-TIME DATA ARCHITECTURE:
+ * - Direct live feed from Google Apps Script Web App endpoint.
+ * - Zero hardcoded offline shift or employee datasets.
+ * - Dynamic Calendar View with terminal abbreviations (HCT, VYP, FOK, WIL, SCT, CHR, KAK, MAT, VYT, OCC).
+ * - Live C-Off Expiry Countdown & Alert system.
  */
 
 // REPLACE with your deployed Google Apps Script Web App URL (Exec endpoint)
-const GOOGLE_SCRIPT_API_URL = "https://script.google.com/macros/s/AKfycbyt9Ai5-FBS23G1_OSbg30a2sCyXjuY9dWuPfqo2YHR2Umbunn2uIXnlozAEGOpigkquA/exec";
+const GOOGLE_SCRIPT_API_URL = "https://script.google.com/macros/s/AKfycbz_REPLACE_WITH_YOUR_DEPLOYMENT_ID/exec";
 
 // Standard Terminal Name to Abbreviation Converter
 function getTerminalAbbr(name) {
   if (!name) return "";
-  const n = name.trim().toLowerCase();
+  const n = String(name).trim().toLowerCase();
   if (n.includes("high court") || n.includes("highcourt") || n === "hct") return "HCT";
   if (n.includes("vypin") || n === "vyp") return "VYP";
   if (n.includes("fort kochi") || n.includes("fortkochi") || n === "fok") return "FOK";
@@ -31,7 +32,7 @@ function getTerminalAbbr(name) {
 // In-memory shift map indexed by YYYY-MM-DD
 const gShiftMap = new Map();
 
-// Calendar Navigation State (Default to current date)
+// Calendar Navigation State
 let gCalCurrentDate = new Date();
 let gSelectedDateStr = "";
 
@@ -49,10 +50,10 @@ document.addEventListener("DOMContentLoaded", () => {
     syncBtn.addEventListener("click", () => fetchLiveSheetData(true));
   }
 
-  // Check if cached data exists from a prior successful live sync
+  // Load previous session cache if available to prevent blank screen during load
   loadPreviousSessionCache();
 
-  // Trigger live Google Sheet fetch
+  // Fetch live Google Sheet data
   fetchLiveSheetData();
 });
 
@@ -132,7 +133,7 @@ async function fetchLiveSheetData(isManual = false) {
   const statusText = document.getElementById("sync-status-text");
 
   if (!GOOGLE_SCRIPT_API_URL || GOOGLE_SCRIPT_API_URL.includes("REPLACE_WITH_YOUR_DEPLOYMENT_ID")) {
-    if (statusText) statusText.textContent = "⚠️ Please set your Apps Script URL in tracker-sync.js";
+    if (statusText) statusText.textContent = "⚠️ Please configure your Apps Script URL in tracker-sync.js";
     return;
   }
 
@@ -152,11 +153,11 @@ async function fetchLiveSheetData(isManual = false) {
     const timeStr = now.toLocaleTimeString([], { hour: "2-digit", minute: "2-digit" });
     if (statusText) statusText.textContent = `✓ Synced with Sheet at ${timeStr}`;
 
-    // Cache the verified response for seamless reconnects
+    // Cache verified live data to handle brief offline moments seamlessly
     localStorage.setItem("kwml_sheet_live_cache", JSON.stringify(data));
   } catch (err) {
     console.error("Sheet synchronization error:", err);
-    if (statusText) statusText.textContent = "❌ Sync failed: Check sheet permissions or connection";
+    if (statusText) statusText.textContent = "❌ Sync failed: Check script deployment or connection";
   }
 }
 
@@ -169,15 +170,15 @@ function updateDashboardUI(data) {
   // 1. Employee Details
   if (data.employee) {
     const emp = data.employee;
-    safeSetText("#emp-name", emp.name);
-    safeSetText("#profile-name", emp.name);
-    safeSetText("#emp-id", emp.empId);
-    safeSetText("#profile-empid", emp.empId);
-    safeSetText("#emp-designation", emp.designation);
-    safeSetText("#profile-designation", emp.designation);
-    safeSetText("#profile-desig-row", emp.designation);
-    safeSetText("#emp-doj", emp.doj);
-    safeSetText("#profile-doj", emp.doj);
+    safeSetText("#emp-name", emp.name || "--");
+    safeSetText("#profile-name", emp.name || "--");
+    safeSetText("#emp-id", emp.empId || "--");
+    safeSetText("#profile-empid", emp.empId || "--");
+    safeSetText("#emp-designation", emp.designation || "--");
+    safeSetText("#profile-designation", emp.designation || "--");
+    safeSetText("#profile-desig-row", emp.designation || "--");
+    safeSetText("#emp-doj", emp.doj || "--");
+    safeSetText("#profile-doj", emp.doj || "--");
 
     if (emp.doj) {
       safeSetText("#profile-workyear", `${emp.doj} – 1 Work-Year cycle`);
@@ -187,10 +188,10 @@ function updateDashboardUI(data) {
   // 2. Duty & Attendance Statistics
   if (data.statistics) {
     const s = data.statistics;
-    safeSetText("#stat-days-worked", s.daysWorked);
-    safeSetText("#stat-offs-availed", s.totalOffs);
-    safeSetText("#stat-coffs-availed", s.coffsAvailed);
-    safeSetText("#stat-el-availed", s.emergencyLeavesAvailed);
+    safeSetText("#stat-days-worked", s.daysWorked !== null && s.daysWorked !== undefined ? s.daysWorked : "--");
+    safeSetText("#stat-offs-availed", s.totalOffs !== null && s.totalOffs !== undefined ? s.totalOffs : "--");
+    safeSetText("#stat-coffs-availed", s.coffsAvailed !== null && s.coffsAvailed !== undefined ? s.coffsAvailed : "--");
+    safeSetText("#stat-el-availed", s.emergencyLeavesAvailed !== null && s.emergencyLeavesAvailed !== undefined ? s.emergencyLeavesAvailed : "--");
 
     const coffsAvailed = Number(s.coffsAvailed || 0);
     safeSetText("#stat-coffs-sub", `${coffsAvailed} Availed`);
@@ -200,30 +201,30 @@ function updateDashboardUI(data) {
   let activePoolTotal = 0.0;
   if (data.leaveBalances && Array.isArray(data.leaveBalances)) {
     data.leaveBalances.forEach(item => {
-      const typeLower = (item.type || "").toLowerCase();
+      const typeLower = String(item.type || "").toLowerCase();
       const netVal = item.net === "-" ? "-" : Number(item.net || 0);
 
       if (typeof netVal === "number" && !isNaN(netVal)) {
         activePoolTotal += netVal;
       }
 
-      if (typeLower.includes("paid leave") || typeLower.includes("(pl)")) {
-        safeSetText("#balance-pl-net", item.net);
-        safeSetText("#balance-pl-accrued", item.rule || `Accrued: ${item.accrued} (1 PL / 20 days)`);
+      if (typeLower.includes("(pl)") || typeLower.includes("paid leave")) {
+        safeSetText("#balance-pl-net", item.net !== undefined ? item.net : "--");
+        safeSetText("#balance-pl-accrued", item.rule || `Accrued: ${item.accrued || 0} (1 PL / 20 days)`);
         safeSetText("#profile-rule-pl", item.rule || "1 PL / 20 Qualifying Days");
-      } else if (typeLower.includes("casual leave") || typeLower.includes("(cl)")) {
-        safeSetText("#balance-cl-net", item.net);
-        safeSetText("#balance-cl-accrued", item.rule || `Accrued: ${item.accrued} (1 Work-Year)`);
+      } else if (typeLower.includes("(cl)") || typeLower.includes("casual leave")) {
+        safeSetText("#balance-cl-net", item.net !== undefined ? item.net : "--");
+        safeSetText("#balance-cl-accrued", item.rule || `Accrued: ${item.accrued || 0} (1 Work-Year)`);
         safeSetText("#profile-rule-cl", item.rule || "1 Day / Month (1 Work-Yr Validity)");
-      } else if (typeLower.includes("compensatory off") || typeLower.includes("(c-off)")) {
-        safeSetText("#balance-coff-net", item.net);
+      } else if (typeLower.includes("(c-off)") || typeLower.includes("compensatory off")) {
+        safeSetText("#balance-coff-net", item.net !== undefined ? item.net : "--");
         safeSetText("#balance-coff-accrued", item.rule || "90-Day validity from duty date");
         safeSetText("#profile-rule-coff", item.rule || "1:1 on Holiday Duty (90-Day Validity)");
-      } else if (typeLower.includes("restricted holiday") || typeLower.includes("(rh)")) {
-        safeSetText("#balance-rh-net", item.net);
+      } else if (typeLower.includes("(rh)") || typeLower.includes("restricted holiday")) {
+        safeSetText("#balance-rh-net", item.net !== undefined ? item.net : "--");
         safeSetText("#balance-rh-accrued", item.rule || "Expires 31-Dec • Resets Jan 1");
         safeSetText("#profile-rule-rh", item.rule || "2 Days / Calendar Year");
-      } else if (typeLower.includes("emergency leave") || typeLower.includes("el")) {
+      } else if (typeLower.includes("(el") || typeLower.includes("emergency leave")) {
         safeSetText("#profile-rule-el", item.rule || "Max 15 Days / Year (Unpaid / LOP)");
       }
     });
@@ -231,7 +232,7 @@ function updateDashboardUI(data) {
     safeSetText("#emp-pool", `${activePoolTotal.toFixed(1)} Days Active`);
   }
 
-  // 4. C-Off List & Expiry Alert
+  // 4. C-Off List & Nearest Expiry Alert
   if (data.coffs && Array.isArray(data.coffs)) {
     renderCOffList(data.coffs);
   }
@@ -239,6 +240,26 @@ function updateDashboardUI(data) {
   // 5. Shift Roster Calendar Indexing
   const shiftsToLoad = data.shifts || data.recentShifts || [];
   buildShiftIndex(shiftsToLoad);
+
+  // If shifts exist, and current navigation has no shifts, center around the latest shift date
+  if (shiftsToLoad.length > 0 && gShiftMap.size > 0) {
+    const dates = Array.from(gShiftMap.keys()).sort();
+    const latestDateStr = dates[dates.length - 1];
+    const todayY = gCalCurrentDate.getFullYear();
+    const todayM = String(gCalCurrentDate.getMonth() + 1).padStart(2, "0");
+    const currentPrefix = `${todayY}-${todayM}`;
+
+    // If current calendar month has no shifts at all, move to month of latest recorded shift
+    const hasShiftsInCurrentMonth = dates.some(d => d.startsWith(currentPrefix));
+    if (!hasShiftsInCurrentMonth && latestDateStr) {
+      const p = latestDateStr.split("-");
+      if (p.length === 3) {
+        gCalCurrentDate = new Date(parseInt(p[0], 10), parseInt(p[1], 10) - 1, parseInt(p[2], 10));
+        gSelectedDateStr = latestDateStr;
+      }
+    }
+  }
+
   renderCalendarMonth();
 }
 
@@ -255,11 +276,11 @@ function renderCOffList(coffs) {
   let activeCount = 0;
   let availedCount = 0;
   let nearestExpiringItem = null;
-  let lowestDaysRemaining = 9999;
+  let lowestDaysRemaining = 99999;
 
   coffs.forEach(item => {
     earnedCount++;
-    const isAvailed = (item.status || "").toLowerCase().includes("availed");
+    const isAvailed = String(item.status || "").toLowerCase().includes("availed");
     const days = parseInt(item.daysRemaining, 10);
 
     if (isAvailed) {
@@ -280,13 +301,13 @@ function renderCOffList(coffs) {
     card.className = "ios-list-cell";
     card.innerHTML = `
       <div>
-        <div style="font-weight:600; font-size:14px; color: var(--text-primary);">${item.holiday}</div>
-        <div style="font-size:11px; color: var(--text-muted); margin-top:2px;">Worked: ${item.dutyDate} • ${item.shift}</div>
-        <div style="font-size:11px; color: var(--ios-orange); margin-top:2px;">Expires: ${item.expiryDate}</div>
+        <div style="font-weight:600; font-size:14px; color: var(--text-primary);">${item.holiday || "Holiday"}</div>
+        <div style="font-size:11px; color: var(--text-muted); margin-top:2px;">Worked: ${item.dutyDate || "--"} • ${item.shift || "--"}</div>
+        <div style="font-size:11px; color: var(--ios-orange); margin-top:2px;">Expires: ${item.expiryDate || "--"}</div>
       </div>
       <div style="text-align:right;">
         <span class="status-pill ${badgeClass}">
-          ${isAvailed ? "Availed" : (isNaN(days) ? item.status : `${days}d left`)}
+          ${isAvailed ? "Availed" : (isNaN(days) ? (item.status || "Active") : `${days}d left`)}
         </span>
       </div>
     `;

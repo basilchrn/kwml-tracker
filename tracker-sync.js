@@ -420,7 +420,7 @@ function renderCalendarMonth() {
 
     const shift = gShiftMap.get(isoDate);
     
-    // Check if real shift or leave data exists in Google Sheet
+    // Only real shifts or leaves from Google Sheet are active/clickable
     const hasData = Boolean(
       shift && 
       shift.code && 
@@ -436,41 +436,75 @@ function renderCalendarMonth() {
       const abbr = getTerminalAbbr(shift.terminal);
 
       if (status.includes("Holiday Worked")) {
-        badgeHtml = `<span class="cal-badge badge-holiday-worked">H+C</span>`;
+        // 2 lines: Line 1 = "H+C (A)", Line 2 = Terminal Abbreviation
+        badgeHtml = `
+          <div class="cal-badge-2line badge-holiday-worked">
+            <span class="badge-line-shift">H+C (${code})</span>
+            <span class="badge-line-term">${abbr}</span>
+          </div>`;
       } else if (code === "A") {
-        badgeHtml = `<span class="cal-badge badge-shift-a">A • ${abbr}</span>`;
+        // 2 lines: Line 1 = "Shift A", Line 2 = Terminal Abbreviation
+        badgeHtml = `
+          <div class="cal-badge-2line badge-shift-a">
+            <span class="badge-line-shift">Shift A</span>
+            <span class="badge-line-term">${abbr}</span>
+          </div>`;
       } else if (code === "B") {
-        badgeHtml = `<span class="cal-badge badge-shift-b">B • ${abbr}</span>`;
+        // 2 lines: Line 1 = "Shift B", Line 2 = Terminal Abbreviation
+        badgeHtml = `
+          <div class="cal-badge-2line badge-shift-b">
+            <span class="badge-line-shift">Shift B</span>
+            <span class="badge-line-term">${abbr}</span>
+          </div>`;
       } else if (code === "G") {
-        badgeHtml = `<span class="cal-badge badge-shift-g">G • ${abbr}</span>`;
+        // 2 lines: Line 1 = "Shift G", Line 2 = Terminal Abbreviation
+        badgeHtml = `
+          <div class="cal-badge-2line badge-shift-g">
+            <span class="badge-line-shift">Shift G</span>
+            <span class="badge-line-term">${abbr}</span>
+          </div>`;
       } else if (code === "EL" || status.includes("LOP") || status.includes("Emergency")) {
-        // Red color for LOP / EL
-        badgeHtml = `<span class="cal-badge badge-leave-el">EL (LOP)</span>`;
+        // RED: 2 lines: "EL" / "LOP"
+        badgeHtml = `
+          <div class="cal-badge-2line badge-leave-el">
+            <span class="badge-line-shift">EL</span>
+            <span class="badge-line-term">LOP</span>
+          </div>`;
       } else if (code === "C-OFF" || status.includes("C-Off")) {
-        // Maroon color for C-Off
-        badgeHtml = `<span class="cal-badge badge-leave-maroon">C-Off</span>`;
-      } else if (code === "CL") {
-        // Maroon color for Casual Leave
-        badgeHtml = `<span class="cal-badge badge-leave-maroon">CL</span>`;
-      } else if (code === "PL") {
-        // Maroon color for Paid Leave
-        badgeHtml = `<span class="cal-badge badge-leave-maroon">PL</span>`;
-      } else if (code === "RH") {
-        // Maroon color for Restricted Holiday
-        badgeHtml = `<span class="cal-badge badge-leave-maroon">RH</span>`;
+        // MAROON: 2 lines: "C-Off" / "Availed"
+        badgeHtml = `
+          <div class="cal-badge-2line badge-leave-maroon">
+            <span class="badge-line-shift">C-Off</span>
+            <span class="badge-line-term">Availed</span>
+          </div>`;
+      } else if (code === "CL" || code === "PL" || code === "RH") {
+        // MAROON: 2 lines: Leave Code / "Leave"
+        badgeHtml = `
+          <div class="cal-badge-2line badge-leave-maroon">
+            <span class="badge-line-shift">${code}</span>
+            <span class="badge-line-term">Leave</span>
+          </div>`;
       } else if (code === "HOLIDAY" || status.includes("Official Holiday")) {
-        // Maroon color for Official Holiday Off
-        badgeHtml = `<span class="cal-badge badge-leave-maroon">Holiday</span>`;
+        // MAROON: 2 lines: "Holiday" / "Off"
+        badgeHtml = `
+          <div class="cal-badge-2line badge-leave-maroon">
+            <span class="badge-line-shift">Holiday</span>
+            <span class="badge-line-term">Off</span>
+          </div>`;
       } else if (code === "WO" || status.includes("Off")) {
         badgeHtml = `<span class="cal-badge badge-off-day">Off</span>`;
       } else {
-        badgeHtml = `<span class="cal-badge badge-shift-a">${code} • ${abbr}</span>`;
+        badgeHtml = `
+          <div class="cal-badge-2line badge-shift-a">
+            <span class="badge-line-shift">${code}</span>
+            <span class="badge-line-term">${abbr}</span>
+          </div>`;
       }
     }
 
     cell.innerHTML = `<span class="cal-day-number">${day}</span>${badgeHtml}`;
 
-    // 1) DATES WITH NO DATA: No click listener, no active animation, no selection
+    // Click event only assigned if real data exists for this date
     if (hasData) {
       cell.classList.add("has-data");
       if (isoDate === gSelectedDateStr) {
@@ -487,7 +521,6 @@ function renderCalendarMonth() {
     }
 
     grid.appendChild(cell);
-  }
 
   // 3. Next month leading days
   const totalRendered = firstDayIndex + daysInMonth;

@@ -19,7 +19,7 @@
  */
 
 // REPLACE with your deployed Google Apps Script Web App URL (Exec endpoint)
-const GOOGLE_SCRIPT_API_URL = "https://script.google.com/macros/s/AKfycbz_REPLACE_WITH_YOUR_DEPLOYMENT_ID/exec";
+const GOOGLE_SCRIPT_API_URL = "https://script.google.com/macros/s/AKfycbyt9Ai5-FBS23G1_OSbg30a2sCyXjuY9dWuPfqo2YHR2Umbunn2uIXnlozAEGOpigkquA/exec";
 
 // Standard Terminal Name to Abbreviation Converter
 function getTerminalAbbr(name) {
@@ -528,24 +528,24 @@ function renderCalendarMonth() {
             <span class="badge-line-term">${abbr}</span>
           </div>`;
       } else if (code === "A") {
-        // Line 1: Shift A, Line 2: Terminal
+        // Line 1: A, Line 2: Terminal
         badgeHtml = `
           <div class="cal-badge-2line badge-shift-a">
-            <span class="badge-line-shift">Shift A</span>
+            <span class="badge-line-shift">A</span>
             <span class="badge-line-term">${abbr}</span>
           </div>`;
       } else if (code === "B") {
-        // Line 1: Shift B, Line 2: Terminal
+        // Line 1: B, Line 2: Terminal
         badgeHtml = `
           <div class="cal-badge-2line badge-shift-b">
-            <span class="badge-line-shift">Shift B</span>
+            <span class="badge-line-shift">B</span>
             <span class="badge-line-term">${abbr}</span>
           </div>`;
       } else if (code === "G") {
-        // Line 1: Shift G, Line 2: Terminal
+        // Line 1: G, Line 2: Terminal
         badgeHtml = `
           <div class="cal-badge-2line badge-shift-g">
-            <span class="badge-line-shift">Shift G</span>
+            <span class="badge-line-shift">G</span>
             <span class="badge-line-term">${abbr}</span>
           </div>`;
       } else if (code === "EL" || status.includes("LOP") || status.includes("Emergency")) {

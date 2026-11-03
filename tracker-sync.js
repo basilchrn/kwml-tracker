@@ -576,3 +576,70 @@ function safeSetText(selector, text) {
     el.textContent = text;
   }
 }
+
+/**
+ * Renders the Annual Calendar Holidays dynamically for the current work year.
+ * Evaluates whether the holiday is past, upcoming, or worked with C-Off earned.
+ */
+function renderAnnualHolidays(holidays) {
+  const container = document.getElementById("holidays-items-container");
+  const yearTitle = document.getElementById("holiday-year-title");
+  if (!container) return;
+
+  const currentYear = new Date().getFullYear();
+  if (yearTitle) {
+    yearTitle.textContent = `${currentYear} Official Holidays`;
+  }
+
+  container.innerHTML = "";
+
+  // Filter or sort holidays for the active calendar year
+  const activeYearHolidays = holidays.filter(h => {
+    if (!h.date) return false;
+    const parts = h.date.split("-");
+    const yr = parts.length === 3 ? (parts[0].length === 4 ? parts[0] : parts[2]) : "";
+    return yr === String(currentYear);
+  });
+
+  const listToRender = activeYearHolidays.length > 0 ? activeYearHolidays : holidays;
+
+  listToRender.forEach(h => {
+    const isWorked = h.dutyStatus && h.dutyStatus.toLowerCase().includes("worked");
+    const isPrior = h.dutyStatus && h.dutyStatus.toLowerCase().includes("prior");
+    const isAvailed = h.dutyStatus && (h.dutyStatus.toLowerCase().includes("availed") || h.dutyStatus.toLowerCase().includes("off"));
+    
+    let badgeClass = "badge-safe";
+    let badgeText = "Upcoming";
+
+    if (isWorked) {
+      badgeClass = "badge-urgent";
+      badgeText = "+1 C-Off Earned";
+    } else if (isPrior) {
+      badgeClass = "badge-availed";
+      badgeText = "Prior to Joining";
+    } else if (isAvailed) {
+      badgeClass = "badge-availed";
+      badgeText = "Availed / Off";
+    }
+
+    const card = document.createElement("div");
+    card.className = "ios-list-cell";
+    card.innerHTML = `
+      <div>
+        <div style="font-weight:600; font-size:14px; color: var(--text-primary);">${h.name}</div>
+        <div style="font-size:11px; color: var(--text-muted); margin-top:2px;">
+          ${h.date} (${h.day || ""}) • ${h.type || "Holiday"}
+        </div>
+        <div style="font-size:11px; color: var(--text-secondary); margin-top:2px;">
+          ${h.dutyStatus || "Scheduled Holiday"}
+        </div>
+      </div>
+      <div style="text-align:right;">
+        <span class="status-pill ${badgeClass}">
+          ${badgeText}
+        </span>
+      </div>
+    `;
+    container.appendChild(card);
+  });
+}

@@ -720,3 +720,114 @@
       height: 8px;
       border-radius: 50%;
     }
+
+/* Calendar Day Cells */
+    .cal-day-cell {
+      min-height: 52px;
+      border-radius: 12px;
+      background: rgba(255, 255, 255, 0.02);
+      border: 1px solid transparent;
+      padding: 4px 2px;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: flex-start;
+      position: relative;
+      cursor: default; /* Default: non-interactive */
+      transition: all 0.15s cubic-bezier(0.16, 1, 0.3, 1);
+    }
+
+    /* Dates WITH Data: Interactive, clickable */
+    .cal-day-cell.has-data {
+      cursor: pointer;
+    }
+
+    .cal-day-cell.has-data:active {
+      transform: scale(0.94);
+    }
+
+    /* Dates with NO Data: Disabled, no link/tap action */
+    .cal-day-cell.no-data {
+      cursor: default !important;
+      pointer-events: none !important;
+      opacity: 0.35;
+    }
+
+    .cal-day-cell.other-month {
+      opacity: 0.18;
+      pointer-events: none;
+    }
+
+    .cal-day-cell.is-selected {
+      border-color: var(--ios-blue);
+      background: rgba(10, 132, 255, 0.18);
+      box-shadow: 0 0 12px rgba(10, 132, 255, 0.3);
+    }
+
+    .cal-day-cell.is-today .cal-day-number {
+      background: var(--ios-blue);
+      color: #FFFFFF;
+      font-weight: 700;
+      border-radius: 50%;
+      width: 22px;
+      height: 22px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      margin-bottom: 2px;
+    }
+
+    /* ====================================================
+       LEAVE & SHIFT COLOR SCHEMES
+       ==================================================== */
+
+    /* 1. Emergency Leave / LOP: RED */
+    .badge-leave-el,
+    .badge-leave-lop {
+      background: rgba(255, 69, 58, 0.22);
+      color: #FF453A;
+      border: 1px solid rgba(255, 69, 58, 0.5);
+    }
+
+    /* 2. Other Leaves & C-Offs Availed: MAROON */
+    .badge-leave-maroon,
+    .badge-leave-coff,
+    .badge-leave-cl,
+    .badge-leave-pl,
+    .badge-leave-rh,
+    .badge-holiday-off {
+      background: rgba(144, 28, 54, 0.32);
+      color: #F07187;
+      border: 1px solid rgba(216, 74, 101, 0.5);
+    }
+
+    /* 3. Rostered Shifts & Working Holidays */
+    .badge-shift-a {
+      background: rgba(10, 132, 255, 0.25);
+      color: var(--ios-blue);
+      border: 1px solid rgba(10, 132, 255, 0.4);
+    }
+
+    .badge-shift-b {
+      background: rgba(255, 159, 10, 0.25);
+      color: var(--ios-orange);
+      border: 1px solid rgba(255, 159, 10, 0.4);
+    }
+
+    .badge-shift-g {
+      background: rgba(48, 209, 88, 0.25);
+      color: var(--ios-green);
+      border: 1px solid rgba(48, 209, 88, 0.4);
+    }
+
+    .badge-holiday-worked {
+      background: rgba(191, 90, 242, 0.3);
+      color: var(--ios-purple);
+      border: 1px solid rgba(191, 90, 242, 0.5);
+    }
+
+    .badge-off-day {
+      background: rgba(148, 163, 184, 0.12);
+      color: var(--text-muted);
+      border: 1px solid rgba(148, 163, 184, 0.2);
+    }

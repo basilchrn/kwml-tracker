@@ -1,12 +1,21 @@
 /**
+ * ==============================================================================
  * tracker-sync.js
- * Synchronizes the KWML iOS 4-Tab Dashboard dynamically with the Google Sheet.
+ * Synchronizes the KWML iOS 4-Tab Dashboard dynamically with Google Sheet.
  * 
  * STRICT REAL-TIME DATA ARCHITECTURE:
  * - Direct live feed from Google Apps Script Web App endpoint.
  * - Zero hardcoded offline shift or employee datasets.
- * - Dynamic Calendar View with terminal abbreviations (HCT, VYP, FOK, WIL, SCT, CHR, KAK, MAT, VYT, OCC).
+ * - Dynamic 2-Line Calendar View:
+ *   * Line 1: Shift Code / Leave Type
+ *   * Line 2: Standardized Terminal Abbreviation (HCT, VYP, FOK, WIL, SCT, CHR, KAK, MAT, VYT, OCC)
+ * - Dates with no data in Google Sheet are non-interactive (no link/pointer events).
+ * - Dedicated color scheme:
+ *   * RED for Emergency Leave / Loss of Pay (EL / LOP)
+ *   * MAROON for Other Leaves & C-Offs Availed (C-OFF, CL, PL, RH, Holiday Off)
  * - Live C-Off Expiry Countdown & Alert system.
+ * - Dynamic Annual Official Holidays Register for active working year.
+ * ==============================================================================
  */
 
 // REPLACE with your deployed Google Apps Script Web App URL (Exec endpoint)
@@ -50,7 +59,7 @@ document.addEventListener("DOMContentLoaded", () => {
     syncBtn.addEventListener("click", () => fetchLiveSheetData(true));
   }
 
-  // Load previous session cache if available to prevent blank screen during load
+  // Load previous session cache if available to prevent blank screen during initial load
   loadPreviousSessionCache();
 
   // Fetch live Google Sheet data
@@ -121,7 +130,9 @@ function initCalendarControls() {
       const d = String(gCalCurrentDate.getDate()).padStart(2, "0");
       gSelectedDateStr = `${y}-${m}-${d}`;
       renderCalendarMonth();
-      inspectDate(gSelectedDateStr);
+      if (gShiftMap.has(gSelectedDateStr)) {
+        inspectDate(gSelectedDateStr);
+      }
     });
   }
 }
@@ -237,16 +248,16 @@ function updateDashboardUI(data) {
     renderCOffList(data.coffs);
   }
 
-  // 4b. Annual Holidays List (Calendar year)
+  // 5. Annual Calendar Holidays (Pulled dynamically from Sheet)
   if (data.holidays && Array.isArray(data.holidays)) {
     renderAnnualHolidays(data.holidays);
   }
-  
-  // 5. Shift Roster Calendar Indexing
+
+  // 6. Shift Roster Calendar Indexing
   const shiftsToLoad = data.shifts || data.recentShifts || [];
   buildShiftIndex(shiftsToLoad);
 
-  // If shifts exist, and current navigation has no shifts, center around the latest shift date
+  // If shifts exist, and current navigation month has no recorded data, center around the latest active date
   if (shiftsToLoad.length > 0 && gShiftMap.size > 0) {
     const dates = Array.from(gShiftMap.keys()).sort();
     const latestDateStr = dates[dates.length - 1];
@@ -254,7 +265,6 @@ function updateDashboardUI(data) {
     const todayM = String(gCalCurrentDate.getMonth() + 1).padStart(2, "0");
     const currentPrefix = `${todayY}-${todayM}`;
 
-    // If current calendar month has no shifts at all, move to month of latest recorded shift
     const hasShiftsInCurrentMonth = dates.some(d => d.startsWith(currentPrefix));
     if (!hasShiftsInCurrentMonth && latestDateStr) {
       const p = latestDateStr.split("-");
@@ -346,6 +356,77 @@ function renderCOffList(coffs) {
 }
 
 /**
+ * Renders the Annual Calendar Holidays dynamically for the active work/calendar year.
+ */
+function renderAnnualHolidays(holidays) {
+  const container = document.getElementById("holiday-items-container") || document.getElementById("holidays-items-container");
+  const yearLabel = document.getElementById("holidays-year-label");
+  const countBadge = document.getElementById("holidays-count-badge");
+  if (!container) return;
+
+  const currentYear = new Date().getFullYear();
+  if (yearLabel) {
+    yearLabel.textContent = String(currentYear);
+  }
+
+  container.innerHTML = "";
+
+  // Filter holidays belonging to the active calendar year
+  const activeYearHolidays = holidays.filter(h => {
+    if (!h.date) return false;
+    const parts = h.date.split("-");
+    const yr = parts.length === 3 ? (parts[0].length === 4 ? parts[0] : parts[2]) : "";
+    return yr === String(currentYear);
+  });
+
+  const listToRender = activeYearHolidays.length > 0 ? activeYearHolidays : holidays;
+
+  if (countBadge) {
+    countBadge.textContent = `${listToRender.length} Holidays`;
+  }
+
+  listToRender.forEach(h => {
+    const isWorked = h.dutyStatus && h.dutyStatus.toLowerCase().includes("worked");
+    const isPrior = h.dutyStatus && h.dutyStatus.toLowerCase().includes("prior");
+    const isAvailed = h.dutyStatus && (h.dutyStatus.toLowerCase().includes("availed") || h.dutyStatus.toLowerCase().includes("off"));
+
+    let badgeClass = "badge-safe";
+    let badgeText = "Upcoming";
+
+    if (isWorked) {
+      badgeClass = "badge-holiday-worked";
+      badgeText = "+1 C-Off Earned";
+    } else if (isPrior) {
+      badgeClass = "badge-availed";
+      badgeText = "Prior to Joining";
+    } else if (isAvailed) {
+      badgeClass = "badge-leave-maroon";
+      badgeText = "Availed / Off";
+    }
+
+    const card = document.createElement("div");
+    card.className = "ios-list-cell";
+    card.innerHTML = `
+      <div>
+        <div style="font-weight:600; font-size:14px; color: var(--text-primary);">${h.name}</div>
+        <div style="font-size:11px; color: var(--text-muted); margin-top:2px;">
+          ${h.date} (${h.day || ""}) • ${h.type || "KWML List"}
+        </div>
+        <div style="font-size:11px; color: var(--text-secondary); margin-top:2px;">
+          ${h.dutyStatus || "Scheduled Holiday"}
+        </div>
+      </div>
+      <div style="text-align:right;">
+        <span class="status-pill ${badgeClass}">
+          ${badgeText}
+        </span>
+      </div>
+    `;
+    container.appendChild(card);
+  });
+}
+
+/**
  * Indexes shift array into Map by ISO date (YYYY-MM-DD)
  */
 function buildShiftIndex(shifts) {
@@ -367,7 +448,11 @@ function buildShiftIndex(shifts) {
 }
 
 /**
- * Renders the iOS Monthly Calendar Grid
+ * Renders the iOS Monthly Calendar Grid:
+ * - 2-line display: Shift Code on Line 1, Terminal on Line 2
+ * - Red for LOP / EL
+ * - Maroon for Other Leaves & C-Offs
+ * - Dates with no data in Google Sheet are non-interactive (no link/pointer action)
  */
 function renderCalendarMonth() {
   const grid = document.getElementById("cal-days-grid");
@@ -419,8 +504,8 @@ function renderCalendarMonth() {
     }
 
     const shift = gShiftMap.get(isoDate);
-    
-    // Only real shifts or leaves from Google Sheet are active/clickable
+
+    // Only dates with recorded shifts or leaves in Google Sheet are interactive
     const hasData = Boolean(
       shift && 
       shift.code && 
@@ -436,56 +521,56 @@ function renderCalendarMonth() {
       const abbr = getTerminalAbbr(shift.terminal);
 
       if (status.includes("Holiday Worked")) {
-        // 2 lines: Line 1 = "H+C (A)", Line 2 = Terminal Abbreviation
+        // Line 1: H+C (Code), Line 2: Terminal
         badgeHtml = `
           <div class="cal-badge-2line badge-holiday-worked">
             <span class="badge-line-shift">H+C (${code})</span>
             <span class="badge-line-term">${abbr}</span>
           </div>`;
       } else if (code === "A") {
-        // 2 lines: Line 1 = "Shift A", Line 2 = Terminal Abbreviation
+        // Line 1: Shift A, Line 2: Terminal
         badgeHtml = `
           <div class="cal-badge-2line badge-shift-a">
             <span class="badge-line-shift">Shift A</span>
             <span class="badge-line-term">${abbr}</span>
           </div>`;
       } else if (code === "B") {
-        // 2 lines: Line 1 = "Shift B", Line 2 = Terminal Abbreviation
+        // Line 1: Shift B, Line 2: Terminal
         badgeHtml = `
           <div class="cal-badge-2line badge-shift-b">
             <span class="badge-line-shift">Shift B</span>
             <span class="badge-line-term">${abbr}</span>
           </div>`;
       } else if (code === "G") {
-        // 2 lines: Line 1 = "Shift G", Line 2 = Terminal Abbreviation
+        // Line 1: Shift G, Line 2: Terminal
         badgeHtml = `
           <div class="cal-badge-2line badge-shift-g">
             <span class="badge-line-shift">Shift G</span>
             <span class="badge-line-term">${abbr}</span>
           </div>`;
       } else if (code === "EL" || status.includes("LOP") || status.includes("Emergency")) {
-        // RED: 2 lines: "EL" / "LOP"
+        // RED: Line 1: EL, Line 2: LOP
         badgeHtml = `
           <div class="cal-badge-2line badge-leave-el">
             <span class="badge-line-shift">EL</span>
             <span class="badge-line-term">LOP</span>
           </div>`;
       } else if (code === "C-OFF" || status.includes("C-Off")) {
-        // MAROON: 2 lines: "C-Off" / "Availed"
+        // MAROON: Line 1: C-Off, Line 2: Availed
         badgeHtml = `
           <div class="cal-badge-2line badge-leave-maroon">
             <span class="badge-line-shift">C-Off</span>
             <span class="badge-line-term">Availed</span>
           </div>`;
       } else if (code === "CL" || code === "PL" || code === "RH") {
-        // MAROON: 2 lines: Leave Code / "Leave"
+        // MAROON: Line 1: Leave Code, Line 2: Leave
         badgeHtml = `
           <div class="cal-badge-2line badge-leave-maroon">
             <span class="badge-line-shift">${code}</span>
             <span class="badge-line-term">Leave</span>
           </div>`;
       } else if (code === "HOLIDAY" || status.includes("Official Holiday")) {
-        // MAROON: 2 lines: "Holiday" / "Off"
+        // MAROON: Line 1: Holiday, Line 2: Off
         badgeHtml = `
           <div class="cal-badge-2line badge-leave-maroon">
             <span class="badge-line-shift">Holiday</span>
@@ -504,7 +589,7 @@ function renderCalendarMonth() {
 
     cell.innerHTML = `<span class="cal-day-number">${day}</span>${badgeHtml}`;
 
-    // Click event only assigned if real data exists for this date
+    // Interaction handling: only dates with real data get click listeners
     if (hasData) {
       cell.classList.add("has-data");
       if (isoDate === gSelectedDateStr) {
@@ -521,6 +606,7 @@ function renderCalendarMonth() {
     }
 
     grid.appendChild(cell);
+  }
 
   // 3. Next month leading days
   const totalRendered = firstDayIndex + daysInMonth;
@@ -538,7 +624,7 @@ function renderCalendarMonth() {
 }
 
 /**
- * Shows duty details for the tapped date
+ * Shows duty / leave details for the tapped date
  */
 function inspectDate(isoDate) {
   const dateEl = document.getElementById("sel-day-date");
@@ -567,9 +653,8 @@ function inspectDate(isoDate) {
   const isOtherLeave = ["CL", "PL", "RH", "C-OFF", "HOLIDAY"].includes(code) || status.includes("Leave") || status.includes("Holiday");
   const abbr = getTerminalAbbr(shift.terminal);
 
-  // 2) Detail Card Badging & Styling:
+  // 1. RED for Emergency Leave / Loss of Pay
   if (isLOP) {
-    // RED for Emergency Leave / Loss of Pay
     badgeEl.textContent = "EL (Loss of Pay)";
     badgeEl.style.color = "#FF453A";
     badgeEl.style.background = "rgba(255, 69, 58, 0.2)";
@@ -598,12 +683,12 @@ function inspectDate(isoDate) {
     return;
   }
 
+  // 2. MAROON for Other Leaves & C-Offs
   if (isOtherLeave) {
-    // MAROON for Other Leaves & C-Offs
     badgeEl.textContent = code === "C-OFF" ? "C-Off Availed" : (code === "HOLIDAY" ? "Holiday Off" : `Leave (${code})`);
     badgeEl.style.color = "#F07187";
-    badgeEl.style.background = "rgba(144, 28, 54, 0.32)";
-    badgeEl.style.borderColor = "rgba(216, 74, 101, 0.5)";
+    badgeEl.style.background = "rgba(144, 28, 54, 0.35)";
+    badgeEl.style.borderColor = "rgba(216, 74, 101, 0.55)";
 
     bodyEl.innerHTML = `
       <div style="display:flex; flex-direction:column; gap:12px; margin-top:4px;">
@@ -628,7 +713,7 @@ function inspectDate(isoDate) {
     return;
   }
 
-  // Work Shifts (A, B, G)
+  // 3. Work Shifts (A, B, G)
   let badgeColor = "var(--ios-blue)";
   let badgeBg = "rgba(10, 132, 255, 0.15)";
 
@@ -689,71 +774,4 @@ function safeSetText(selector, text) {
   if (el && text !== undefined && text !== null) {
     el.textContent = text;
   }
-}
-
-/**
- * Renders the Annual Calendar Holidays dynamically for the current work year.
- * Evaluates whether the holiday is past, upcoming, or worked with C-Off earned.
- */
-function renderAnnualHolidays(holidays) {
-  const container = document.getElementById("holidays-items-container");
-  const yearTitle = document.getElementById("holiday-year-title");
-  if (!container) return;
-
-  const currentYear = new Date().getFullYear();
-  if (yearTitle) {
-    yearTitle.textContent = `${currentYear} Official Holidays`;
-  }
-
-  container.innerHTML = "";
-
-  // Filter or sort holidays for the active calendar year
-  const activeYearHolidays = holidays.filter(h => {
-    if (!h.date) return false;
-    const parts = h.date.split("-");
-    const yr = parts.length === 3 ? (parts[0].length === 4 ? parts[0] : parts[2]) : "";
-    return yr === String(currentYear);
-  });
-
-  const listToRender = activeYearHolidays.length > 0 ? activeYearHolidays : holidays;
-
-  listToRender.forEach(h => {
-    const isWorked = h.dutyStatus && h.dutyStatus.toLowerCase().includes("worked");
-    const isPrior = h.dutyStatus && h.dutyStatus.toLowerCase().includes("prior");
-    const isAvailed = h.dutyStatus && (h.dutyStatus.toLowerCase().includes("availed") || h.dutyStatus.toLowerCase().includes("off"));
-    
-    let badgeClass = "badge-safe";
-    let badgeText = "Upcoming";
-
-    if (isWorked) {
-      badgeClass = "badge-urgent";
-      badgeText = "+1 C-Off Earned";
-    } else if (isPrior) {
-      badgeClass = "badge-availed";
-      badgeText = "Prior to Joining";
-    } else if (isAvailed) {
-      badgeClass = "badge-availed";
-      badgeText = "Availed / Off";
-    }
-
-    const card = document.createElement("div");
-    card.className = "ios-list-cell";
-    card.innerHTML = `
-      <div>
-        <div style="font-weight:600; font-size:14px; color: var(--text-primary);">${h.name}</div>
-        <div style="font-size:11px; color: var(--text-muted); margin-top:2px;">
-          ${h.date} (${h.day || ""}) • ${h.type || "Holiday"}
-        </div>
-        <div style="font-size:11px; color: var(--text-secondary); margin-top:2px;">
-          ${h.dutyStatus || "Scheduled Holiday"}
-        </div>
-      </div>
-      <div style="text-align:right;">
-        <span class="status-pill ${badgeClass}">
-          ${badgeText}
-        </span>
-      </div>
-    `;
-    container.appendChild(card);
-  });
 }

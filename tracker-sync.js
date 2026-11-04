@@ -276,6 +276,58 @@ function updateDashboardUI(data) {
   }
 
   renderCalendarMonth();
+
+  // Inside updateDashboardUI(data):
+if (data.payslips && Array.isArray(data.payslips)) {
+  renderPayslips(data.payslips);
+}
+
+/**
+ * Renders payslip cards into the HTML dashboard.
+ */
+function renderPayslips(payslips) {
+  const container = document.getElementById("payslip-container");
+  if (!container) return;
+
+  container.innerHTML = "";
+
+  if (payslips.length === 0) {
+    container.innerHTML = `
+      <div style="text-align:center; padding:15px; font-size:12px; color:var(--text-muted);">
+        No payslip emails found.
+      </div>`;
+    return;
+  }
+
+  payslips.forEach(slip => {
+    const card = document.createElement("div");
+    card.className = "leave-card";
+    card.style.flexDirection = "column";
+    card.style.alignItems = "stretch";
+    card.style.gap = "8px";
+
+    card.innerHTML = `
+      <div style="display:flex; justify-content:space-between; align-items:center;">
+        <div>
+          <h3 style="font-size:15px; font-weight:700;">${slip.month}</h3>
+          <p style="font-size:11px; color:var(--text-muted);">Pay Days: ${slip.payDays} • Processed: ${slip.date}</p>
+        </div>
+        <div style="text-align:right;">
+          <div style="font-size:17px; font-weight:700; color:var(--ios-green);">₹${slip.netPay}</div>
+          <div style="font-size:10px; color:var(--text-muted); font-weight:600;">NET PAY</div>
+        </div>
+      </div>
+      <div style="display:flex; justify-content:space-between; padding-top:6px; border-top:1px solid var(--border-light); font-size:11px; color:var(--text-secondary);">
+        <span>Basic: ₹${slip.basic}</span>
+        <span>HRA: ₹${slip.hra}</span>
+        <span>EPF: ₹${slip.epf}</span>
+        <span>Deductions: ₹${slip.deductions}</span>
+      </div>
+    `;
+    container.appendChild(card);
+  });
+}
+  
 }
 
 /**

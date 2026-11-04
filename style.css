@@ -796,3 +796,151 @@ body {
 .tab-icon {
   font-size: 18px;
 }
+
+/* ====================================================
+       STICKY PAYSLIP CHART & DONUT STYLES
+       ==================================================== */
+    .sticky-chart-card {
+      position: sticky;
+      top: calc(var(--safe-area-top) + 48px);
+      z-index: 35;
+      background: rgba(15, 23, 42, 0.94);
+      backdrop-filter: blur(20px);
+      -webkit-backdrop-filter: blur(20px);
+      border: 1px solid var(--border-color);
+      border-radius: 20px;
+      padding: 14px;
+      box-shadow: 0 12px 30px rgba(0, 0, 0, 0.45);
+      margin-bottom: 4px;
+    }
+
+    .chart-header {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      margin-bottom: 10px;
+    }
+
+    .chart-title {
+      font-size: 15px;
+      font-weight: 700;
+      color: var(--text-primary);
+    }
+
+    .chart-subtitle {
+      font-size: 11px;
+      color: var(--ios-blue);
+      font-weight: 600;
+      margin-top: 1px;
+    }
+
+    .chart-reset-btn {
+      background: rgba(10, 132, 255, 0.15);
+      border: 1px solid rgba(10, 132, 255, 0.3);
+      color: var(--ios-blue);
+      font-size: 10px;
+      font-weight: 600;
+      padding: 4px 8px;
+      border-radius: 8px;
+      cursor: pointer;
+      display: none;
+    }
+
+    .donut-chart-container {
+      position: relative;
+      width: 130px;
+      height: 130px;
+      margin: 0 auto 10px auto;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+    }
+
+    .donut-svg {
+      width: 100%;
+      height: 100%;
+      transform: rotate(-90deg);
+      border-radius: 50%;
+    }
+
+    .donut-center-info {
+      position: absolute;
+      text-align: center;
+      display: flex;
+      flex-direction: column;
+      pointer-events: none;
+    }
+
+    .donut-center-label {
+      font-size: 9px;
+      color: var(--text-muted);
+      font-weight: 700;
+      letter-spacing: 0.5px;
+    }
+
+    .donut-center-val {
+      font-size: 14px;
+      color: var(--text-primary);
+      font-weight: 700;
+      margin-top: 2px;
+    }
+
+    .chart-legend-grid {
+      display: grid;
+      grid-template-columns: repeat(4, 1fr);
+      gap: 6px;
+    }
+
+    .legend-card {
+      background: var(--bg-card);
+      border: 1px solid var(--border-color);
+      border-radius: 10px;
+      padding: 6px 6px;
+      display: flex;
+      flex-direction: column;
+      text-align: left;
+    }
+
+    .legend-card-lbl {
+      font-size: 9px;
+      color: var(--text-muted);
+      font-weight: 600;
+      text-transform: uppercase;
+    }
+
+    .legend-card-val {
+      font-size: 11px;
+      font-weight: 700;
+      color: var(--text-primary);
+      margin: 2px 0 1px 0;
+      white-space: nowrap;
+    }
+
+    .legend-card-pct {
+      font-size: 9px;
+      color: var(--text-secondary);
+      font-weight: 600;
+    }
+
+    /* Monthly Payslip Interactive Cards */
+    .payslip-item-card {
+      background: var(--bg-card);
+      border: 1px solid var(--border-color);
+      border-radius: 14px;
+      padding: 13px 14px;
+      display: flex;
+      flex-direction: column;
+      gap: 8px;
+      cursor: pointer;
+      transition: all 0.15s ease;
+    }
+
+    .payslip-item-card:active {
+      transform: scale(0.98);
+    }
+
+    .payslip-item-card.is-active-payslip {
+      border-color: var(--ios-blue);
+      background: rgba(10, 132, 255, 0.12);
+      box-shadow: 0 0 12px rgba(10, 132, 255, 0.25);
+    }

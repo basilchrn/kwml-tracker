@@ -285,8 +285,102 @@
       </section>
 
     </main>
+<!-- ==================== TAB 4: PAYSLIPS ==================== -->
+    <main id="tab-payslips" class="tab-page">
+      
+      <!-- Sticky / Fixed Top Pie Chart Card -->
+      <section class="sticky-chart-card">
+        <div class="chart-header">
+          <div>
+            <div class="chart-title" id="payslip-chart-title">Salary Distribution</div>
+            <div class="chart-subtitle" id="payslip-chart-subtitle">FY 2026–27 (Combined)</div>
+          </div>
+          <button id="btn-reset-chart" class="chart-reset-btn" onclick="resetPayslipChart()">Reset to FY</button>
+        </div>
 
-    <!-- ==================== TAB 4: EMPLOYEE / PERSONAL DETAILS ==================== -->
+        <!-- SVG Donut Chart -->
+        <div class="donut-chart-container">
+          <svg viewBox="0 0 160 160" class="donut-svg" id="salary-donut-svg">
+            <circle cx="80" cy="80" r="60" fill="transparent" stroke="rgba(255,255,255,0.05)" stroke-width="20" />
+            <!-- Dynamic SVG Paths inserted by JS -->
+          </svg>
+          <div class="donut-center-info">
+            <span class="donut-center-label" id="donut-center-label">GROSS PAY</span>
+            <strong class="donut-center-val" id="donut-center-val">₹0</strong>
+          </div>
+        </div>
+
+        <!-- Dynamic Color-Coded Slices Legend -->
+        <div class="chart-legend-grid">
+          <div class="legend-card" style="border-left: 3px solid var(--ios-blue);">
+            <span class="legend-card-lbl">Basic</span>
+            <strong class="legend-card-val" id="chart-leg-basic">₹0</strong>
+            <span class="legend-card-pct" id="chart-pct-basic">0%</span>
+          </div>
+          <div class="legend-card" style="border-left: 3px solid var(--ios-purple);">
+            <span class="legend-card-lbl">HRA</span>
+            <strong class="legend-card-val" id="chart-leg-hra">₹0</strong>
+            <span class="legend-card-pct" id="chart-pct-hra">0%</span>
+          </div>
+          <div class="legend-card" style="border-left: 3px solid var(--ios-green);">
+            <span class="legend-card-lbl">VDA</span>
+            <strong class="legend-card-val" id="chart-leg-vda">₹0</strong>
+            <span class="legend-card-pct" id="chart-pct-vda">0%</span>
+          </div>
+          <div class="legend-card" style="border-left: 3px solid var(--ios-orange);">
+            <span class="legend-card-lbl">Allowances</span>
+            <strong class="legend-card-val" id="chart-leg-allow">₹0</strong>
+            <span class="legend-card-pct" id="chart-pct-allow">0%</span>
+          </div>
+        </div>
+      </section>
+
+      <!-- Financial Year Combined Totals Card -->
+      <section>
+        <div class="section-title">
+          <span id="fy-summary-heading">Current Financial Year (FY 2026–27)</span>
+          <span style="font-size: 11px; color: var(--ios-green);" id="fy-months-count">-- Months</span>
+        </div>
+        <div class="stats-grid">
+          <div class="stat-card">
+            <span class="stat-label">Total Gross</span>
+            <div class="stat-value" id="fy-total-gross" style="color:var(--text-primary); font-size:20px;">--</div>
+            <span class="stat-sub">Earnings</span>
+          </div>
+          <div class="stat-card">
+            <span class="stat-label">Total Net Pay</span>
+            <div class="stat-value" id="fy-total-net" style="color:var(--ios-green); font-size:20px;">--</div>
+            <span class="stat-sub">Bank Credit</span>
+          </div>
+          <div class="stat-card">
+            <span class="stat-label">Total Deductions</span>
+            <div class="stat-value" id="fy-total-deductions" style="color:var(--ios-red); font-size:18px;">--</div>
+            <span class="stat-sub">EPF & Others</span>
+          </div>
+          <div class="stat-card">
+            <span class="stat-label">Total Pay Days</span>
+            <div class="stat-value" id="fy-total-days" style="font-size:18px;">--</div>
+            <span class="stat-sub">Service Days</span>
+          </div>
+        </div>
+      </section>
+
+      <!-- Monthly Payslips List -->
+      <section>
+        <div class="section-title">
+          <span>Monthly Pay Slips</span>
+          <span style="font-size: 11px; color: var(--text-muted);">Tap month to update chart</span>
+        </div>
+        <div id="payslip-monthly-container" class="leave-stack">
+          <div style="text-align:center; padding:25px; color:var(--text-muted); font-size:13px;">
+            Loading payslips from Google Sheet...
+          </div>
+        </div>
+      </section>
+
+    </main>
+    
+    <!-- ==================== TAB 5: EMPLOYEE / PERSONAL DETAILS ==================== -->
     <main id="tab-profile" class="tab-page">
       
       <!-- Employee Profile Header Card -->
@@ -389,7 +483,7 @@
 
     </main>
 
-    <!-- Bottom iOS 4-Tab Navigation Bar -->
+<!-- Bottom iOS 5-Tab Navigation Bar -->
     <nav class="bottom-tab-bar">
       <div class="tab-item active" id="tab-nav-summary" onclick="switchTab('summary')">
         <span class="tab-icon">📊</span>
@@ -402,6 +496,10 @@
       <div class="tab-item" id="tab-nav-roster" onclick="switchTab('roster')">
         <span class="tab-icon">🗓️</span>
         <span>Roster</span>
+      </div>
+      <div class="tab-item" id="tab-nav-payslips" onclick="switchTab('payslips')">
+        <span class="tab-icon">💰</span>
+        <span>PaySlips</span>
       </div>
       <div class="tab-item" id="tab-nav-profile" onclick="switchTab('profile')">
         <span class="tab-icon">👤</span>

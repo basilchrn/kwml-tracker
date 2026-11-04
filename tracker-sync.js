@@ -1,19 +1,25 @@
 /**
  * ==============================================================================
  * tracker-sync.js
- * Synchronizes the KWML iOS 4-Tab Dashboard dynamically with Google Sheet.
+ * Synchronizes the KWML iOS 5-Tab Dashboard dynamically with Google Sheet.
  * 
  * STRICT REAL-TIME DATA ARCHITECTURE:
  * - Direct live feed from Google Apps Script Web App endpoint.
- * - Zero hardcoded offline shift or employee datasets.
+ * - Zero hardcoded offline shift, leave, or payslip datasets.
+ * - 5-Tab Navigation: Summary, C-Off, Roster, PaySlips, Profile.
  * - Dynamic 2-Line Calendar View:
- *   * Line 1: Shift Code / Leave Type
+ *   * Line 1: Shift Code ('A', 'B', 'G') or Leave Type
  *   * Line 2: Standardized Terminal Abbreviation (HCT, VYP, FOK, WIL, SCT, CHR, KAK, MAT, VYT, OCC)
  * - Dates with no data in Google Sheet are non-interactive (no link/pointer events).
- * - Dedicated color scheme:
+ * - Color Scheme:
  *   * RED for Emergency Leave / Loss of Pay (EL / LOP)
  *   * MAROON for Other Leaves & C-Offs Availed (C-OFF, CL, PL, RH, Holiday Off)
- * - Live C-Off Expiry Countdown & Alert system.
+ *   * BLUE, ORANGE, GREEN for Shifts A, B, G
+ *   * PURPLE for Holiday Duty (+1 C-Off Earned)
+ * - PaySlips Module (Financial Year April-March):
+ *   * Top interactive SVG Donut/Pie Chart for Salary breakdown (Basic, HRA, VDA, Allowances)
+ *   * Combined FY totals card
+ *   * Monthly payslips list with tap-to-update chart interaction
  * - Dynamic Annual Official Holidays Register for active working year.
  * ==============================================================================
  */
@@ -38,12 +44,15 @@ function getTerminalAbbr(name) {
   return name.split(" ")[0].toUpperCase().slice(0, 4);
 }
 
-// In-memory shift map indexed by YYYY-MM-DD
+// In-memory state maps & navigation state
 const gShiftMap = new Map();
-
-// Calendar Navigation State
 let gCalCurrentDate = new Date();
 let gSelectedDateStr = "";
+
+// Payslips State Store
+let gActiveFYPayslips = [];
+let gFYCombinedTotals = null;
+let gSelectedMonthName = null;
 
 document.addEventListener("DOMContentLoaded", () => {
   initCalendarControls();
@@ -67,14 +76,15 @@ document.addEventListener("DOMContentLoaded", () => {
 });
 
 /**
- * 4-Tab Navigation Switcher
+ * 5-Tab Navigation Switcher
  */
 function switchTab(tabKey) {
-  const tabs = ["summary", "coff", "roster", "profile"];
+  const tabs = ["summary", "coff", "roster", "payslips", "profile"];
   const titles = {
     summary: "Shift & Leave Tracker",
     coff: "C-Off Expiry Hub",
     roster: "Duty Roster Calendar",
+    payslips: "Salary & PaySlips",
     profile: "Employee Profile"
   };
 
@@ -253,7 +263,12 @@ function updateDashboardUI(data) {
     renderAnnualHolidays(data.holidays);
   }
 
-  // 6. Shift Roster Calendar Indexing
+  // 6. PaySlips Module (Filtered strictly to current Financial Year: April - March)
+  if (data.payslips && Array.isArray(data.payslips)) {
+    setupPayslipsModule(data.payslips);
+  }
+
+  // 7. Shift Roster Calendar Indexing
   const shiftsToLoad = data.shifts || data.recentShifts || [];
   buildShiftIndex(shiftsToLoad);
 
@@ -276,58 +291,6 @@ function updateDashboardUI(data) {
   }
 
   renderCalendarMonth();
-
-  // Inside updateDashboardUI(data):
-if (data.payslips && Array.isArray(data.payslips)) {
-  renderPayslips(data.payslips);
-}
-
-/**
- * Renders payslip cards into the HTML dashboard.
- */
-function renderPayslips(payslips) {
-  const container = document.getElementById("payslip-container");
-  if (!container) return;
-
-  container.innerHTML = "";
-
-  if (payslips.length === 0) {
-    container.innerHTML = `
-      <div style="text-align:center; padding:15px; font-size:12px; color:var(--text-muted);">
-        No payslip emails found.
-      </div>`;
-    return;
-  }
-
-  payslips.forEach(slip => {
-    const card = document.createElement("div");
-    card.className = "leave-card";
-    card.style.flexDirection = "column";
-    card.style.alignItems = "stretch";
-    card.style.gap = "8px";
-
-    card.innerHTML = `
-      <div style="display:flex; justify-content:space-between; align-items:center;">
-        <div>
-          <h3 style="font-size:15px; font-weight:700;">${slip.month}</h3>
-          <p style="font-size:11px; color:var(--text-muted);">Pay Days: ${slip.payDays} • Processed: ${slip.date}</p>
-        </div>
-        <div style="text-align:right;">
-          <div style="font-size:17px; font-weight:700; color:var(--ios-green);">₹${slip.netPay}</div>
-          <div style="font-size:10px; color:var(--text-muted); font-weight:600;">NET PAY</div>
-        </div>
-      </div>
-      <div style="display:flex; justify-content:space-between; padding-top:6px; border-top:1px solid var(--border-light); font-size:11px; color:var(--text-secondary);">
-        <span>Basic: ₹${slip.basic}</span>
-        <span>HRA: ₹${slip.hra}</span>
-        <span>EPF: ₹${slip.epf}</span>
-        <span>Deductions: ₹${slip.deductions}</span>
-      </div>
-    `;
-    container.appendChild(card);
-  });
-}
-  
 }
 
 /**
@@ -479,6 +442,269 @@ function renderAnnualHolidays(holidays) {
 }
 
 /**
+ * ==============================================================================
+ * PAYSLIPS MODULE: FINANCIAL YEAR (APRIL - MARCH) & INTERACTIVE DONUT CHART
+ * ==============================================================================
+ */
+
+// Helper: Calculate Active Financial Year (April - March)
+function getCurrentFinancialYear() {
+  const now = new Date();
+  const year = now.getFullYear();
+  const month = now.getMonth(); // 0 = Jan, 3 = Apr
+  const startYear = month >= 3 ? year : year - 1;
+  const endYear = startYear + 1;
+  return {
+    startYear: startYear,
+    endYear: endYear,
+    label: `FY ${startYear}–${String(endYear).slice(-2)}`
+  };
+}
+
+// Helper: Check if month belongs to current FY
+function isMonthInCurrentFY(monthStr, currentFY) {
+  if (!monthStr) return false;
+  const parts = monthStr.split(" ");
+  if (parts.length < 2) return false;
+
+  const mName = parts[0].toLowerCase();
+  const yr = parseInt(parts[1], 10);
+  const monthNames = ["january", "february", "march", "april", "may", "june", "july", "august", "september", "october", "november", "december"];
+  const mIndex = monthNames.indexOf(mName);
+  if (mIndex === -1 || isNaN(yr)) return false;
+
+  const itemFYStart = mIndex >= 3 ? yr : yr - 1;
+  return itemFYStart === currentFY.startYear;
+}
+
+/**
+ * Initializes and processes Payslips for the current Financial Year
+ */
+function setupPayslipsModule(allPayslips) {
+  const fy = getCurrentFinancialYear();
+  safeSetText("#payslip-chart-subtitle", `${fy.label} (Combined Total)`);
+  safeSetText("#fy-summary-heading", `Financial Year Summary (${fy.label})`);
+
+  // Filter only current FY records
+  gActiveFYPayslips = allPayslips.filter(p => isMonthInCurrentFY(p.month, fy));
+  safeSetText("#fy-months-count", `${gActiveFYPayslips.length} Months Recorded`);
+
+  // Calculate Combined Financial Year Totals
+  let totalGross = 0;
+  let totalNet = 0;
+  let totalDeductions = 0;
+  let totalDays = 0;
+  let totalBasic = 0;
+  let totalHra = 0;
+  let totalVda = 0;
+  let totalAllowances = 0;
+
+  gActiveFYPayslips.forEach(p => {
+    const basic = Number(p.basic || 0);
+    const hra = Number(p.hra || 0);
+    const vda = Number(p.vda || 0);
+    const uniform = Number(p.uniform || 0);
+    const refund = Number(p.refund || 0);
+    const gross = Number(p.gross || 0);
+    const net = Number(p.netPay || 0);
+    const ded = Number(p.deductions || 0);
+    const days = parseInt(p.payDays, 10);
+
+    totalBasic += basic;
+    totalHra += hra;
+    totalVda += vda;
+    totalAllowances += (uniform + refund);
+    totalGross += gross;
+    totalNet += net;
+    totalDeductions += ded;
+    if (!isNaN(days)) totalDays += days;
+  });
+
+  gFYCombinedTotals = {
+    title: "Salary Distribution",
+    subtitle: `${fy.label} (Combined Total)`,
+    basic: totalBasic,
+    hra: totalHra,
+    vda: totalVda,
+    allowances: totalAllowances,
+    gross: totalGross,
+    net: totalNet,
+    deductions: totalDeductions,
+    days: totalDays
+  };
+
+  // Populate FY KPI Cards
+  safeSetText("#fy-total-gross", `₹${Math.round(totalGross).toLocaleString('en-IN')}`);
+  safeSetText("#fy-total-net", `₹${Math.round(totalNet).toLocaleString('en-IN')}`);
+  safeSetText("#fy-total-deductions", `₹${Math.round(totalDeductions).toLocaleString('en-IN')}`);
+  safeSetText("#fy-total-days", `${totalDays} Days`);
+
+  // Render Combined Chart by default
+  renderDonutChart(gFYCombinedTotals);
+
+  // Render List of Monthly Payslips
+  renderMonthlyPayslipList();
+}
+
+/**
+ * Draws the SVG Donut slices and updates the legend
+ */
+function renderDonutChart(dataObj) {
+  const svg = document.getElementById("salary-donut-svg");
+  if (!svg) return;
+
+  const basic = dataObj.basic || 0;
+  const hra = dataObj.hra || 0;
+  const vda = dataObj.vda || 0;
+  const allowances = dataObj.allowances || 0;
+  const gross = basic + hra + vda + allowances;
+
+  // Center Text
+  safeSetText("#donut-center-val", `₹${Math.round(gross).toLocaleString('en-IN')}`);
+  safeSetText("#donut-center-label", dataObj === gFYCombinedTotals ? "COMBINED GROSS" : "MONTH GROSS");
+
+  // Legend Values & Percentages
+  const pct = v => gross > 0 ? `${((v / gross) * 100).toFixed(1)}%` : "0%";
+  safeSetText("#chart-leg-basic", `₹${Math.round(basic).toLocaleString('en-IN')}`);
+  safeSetText("#chart-pct-basic", pct(basic));
+  safeSetText("#chart-leg-hra", `₹${Math.round(hra).toLocaleString('en-IN')}`);
+  safeSetText("#chart-pct-hra", pct(hra));
+  safeSetText("#chart-leg-vda", `₹${Math.round(vda).toLocaleString('en-IN')}`);
+  safeSetText("#chart-pct-vda", pct(vda));
+  safeSetText("#chart-leg-allow", `₹${Math.round(allowances).toLocaleString('en-IN')}`);
+  safeSetText("#chart-pct-allow", pct(allowances));
+
+  // Reset button visibility
+  const resetBtn = document.getElementById("btn-reset-chart");
+  if (resetBtn) {
+    resetBtn.style.display = (dataObj !== gFYCombinedTotals) ? "block" : "none";
+  }
+
+  // Generate SVG Slices using stroke-dasharray on circle r=50 (Circumference ≈ 314.16)
+  const C = 2 * Math.PI * 50; // 314.159
+  const slices = [
+    { val: basic, color: "var(--ios-blue)" },
+    { val: hra, color: "var(--ios-purple)" },
+    { val: vda, color: "var(--ios-green)" },
+    { val: allowances, color: "var(--ios-orange)" }
+  ];
+
+  let accumulatedPercent = 0;
+  let pathsHtml = `<circle cx="80" cy="80" r="50" fill="transparent" stroke="rgba(255,255,255,0.06)" stroke-width="22" />`;
+
+  slices.forEach(s => {
+    if (s.val > 0 && gross > 0) {
+      const p = s.val / gross;
+      const strokeDash = p * C;
+      const strokeOffset = -accumulatedPercent * C;
+      pathsHtml += `
+        <circle cx="80" cy="80" r="50" fill="transparent"
+          stroke="${s.color}" stroke-width="22"
+          stroke-dasharray="${strokeDash.toFixed(2)} ${(C - strokeDash).toFixed(2)}"
+          stroke-dashoffset="${strokeOffset.toFixed(2)}"
+          style="transition: all 0.3s ease;"
+        />`;
+      accumulatedPercent += p;
+    }
+  });
+
+  svg.innerHTML = pathsHtml;
+}
+
+/**
+ * Renders the Monthly Payslip List and handles tap-to-update chart
+ */
+function renderMonthlyPayslipList() {
+  const container = document.getElementById("payslip-monthly-container");
+  if (!container) return;
+
+  container.innerHTML = "";
+
+  if (gActiveFYPayslips.length === 0) {
+    container.innerHTML = `<div style="text-align:center; padding:20px; color:var(--text-muted); font-size:12px;">No payslips recorded for the current financial year.</div>`;
+    return;
+  }
+
+  gActiveFYPayslips.forEach(p => {
+    const card = document.createElement("div");
+    card.className = "payslip-item-card";
+    if (gSelectedMonthName === p.month) {
+      card.classList.add("is-active-payslip");
+    }
+
+    const basic = Number(p.basic || 0);
+    const hra = Number(p.hra || 0);
+    const vda = Number(p.vda || 0);
+    const uniform = Number(p.uniform || 0);
+    const refund = Number(p.refund || 0);
+    const allow = uniform + refund;
+
+    card.innerHTML = `
+      <div style="display:flex; justify-content:space-between; align-items:center;">
+        <div>
+          <strong style="font-size:15px; color:var(--text-primary);">${p.month}</strong>
+          <div style="font-size:11px; color:var(--text-muted); margin-top:2px;">
+            ${p.payDays} Pay Days • Processed: ${p.date || "--"}
+          </div>
+        </div>
+        <div style="text-align:right;">
+          <div style="font-size:17px; font-weight:700; color:var(--ios-green);">₹${Number(p.netPay || 0).toLocaleString('en-IN')}</div>
+          <div style="font-size:10px; color:var(--text-muted); font-weight:600;">NET SALARY</div>
+        </div>
+      </div>
+      <div style="display:flex; justify-content:space-between; padding-top:6px; border-top:1px solid var(--border-light); font-size:11px; color:var(--text-secondary);">
+        <span>Basic: ₹${basic.toLocaleString('en-IN')}</span>
+        <span>HRA: ₹${hra.toLocaleString('en-IN')}</span>
+        <span>VDA: ₹${vda.toLocaleString('en-IN')}</span>
+        <span>Ded: ₹${Number(p.deductions || 0).toLocaleString('en-IN')}</span>
+      </div>
+    `;
+
+    // On clicking any payslip data, update the Pie Chart Accordingly
+    card.addEventListener("click", () => {
+      if (gSelectedMonthName === p.month) {
+        resetPayslipChart();
+      } else {
+        gSelectedMonthName = p.month;
+        document.querySelectorAll(".payslip-item-card").forEach(c => c.classList.remove("is-active-payslip"));
+        card.classList.add("is-active-payslip");
+
+        safeSetText("#payslip-chart-title", `${p.month} Salary`);
+        safeSetText("#payslip-chart-subtitle", "Showing single month breakdown");
+
+        renderDonutChart({
+          basic: basic,
+          hra: hra,
+          vda: vda,
+          allowances: allow,
+          gross: Number(p.gross || 0)
+        });
+      }
+    });
+
+    container.appendChild(card);
+  });
+}
+
+/**
+ * Resets chart to show Combined Full FY Data
+ */
+function resetPayslipChart() {
+  gSelectedMonthName = null;
+  document.querySelectorAll(".payslip-item-card").forEach(c => c.classList.remove("is-active-payslip"));
+  const fy = getCurrentFinancialYear();
+  safeSetText("#payslip-chart-title", "Salary Distribution");
+  safeSetText("#payslip-chart-subtitle", `${fy.label} (Combined Total)`);
+  renderDonutChart(gFYCombinedTotals);
+}
+
+/**
+ * ==============================================================================
+ * CALENDAR ROSTER MODULE: 2-LINE BADGES, NO-DATA STATE, COLOR CODING
+ * ==============================================================================
+ */
+
+/**
  * Indexes shift array into Map by ISO date (YYYY-MM-DD)
  */
 function buildShiftIndex(shifts) {
@@ -501,7 +727,7 @@ function buildShiftIndex(shifts) {
 
 /**
  * Renders the iOS Monthly Calendar Grid:
- * - 2-line display: Shift Code on Line 1, Terminal on Line 2
+ * - 2-line display: Shift Code ('A', 'B', 'G') on Line 1, Terminal on Line 2
  * - Red for LOP / EL
  * - Maroon for Other Leaves & C-Offs
  * - Dates with no data in Google Sheet are non-interactive (no link/pointer action)
